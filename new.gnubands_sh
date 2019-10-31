@@ -1,0 +1,44 @@
+#!/bin/bash
+
+echo 
+echo 'This is the bash script with a postprocessing run new.gnubandsf90 //May/04/2019//'
+echo 'Fermi level will be shifted to 0 eV'
+
+while true; do
+  echo
+  ls *.bands
+echo
+echo 'Please select an input file'
+read -p "==>  " -e filna
+history -s "$filna"
+if [[ ! -f $filna ]]; then
+  echo
+  echo Error: no exist file, enter again
+elif [[ ! $filna == *.bands ]]; then
+    echo
+    echo Error: no "*.bands" file selected, enter again
+    # name is denchar.fdf?
+else
+    break 1
+fi
+done
+
+while true; do
+echo
+echo 'Please enter the range of energy'
+echo '(0 eV < range)'
+read -p '==>  ' -e rang
+history -s "$rang" &>/dev/null
+chk='^[+-]?[0-9]+([.][0-9]+)?$'
+if [[ ! $rang =~ $chk ]] 2>/dev/null; then
+  echo
+  echo 'Error : Need a number, enter again'
+elif (($(echo "$rang <= 0" | bc -l ))) 2>/dev/null; then
+  echo
+  echo 'Error : Enter again'
+else
+  break 1
+fi
+done
+
+new.gnubandsf90 -F -e $((-rang)) -E $rang $filna

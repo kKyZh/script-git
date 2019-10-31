@@ -1,0 +1,24 @@
+#!/bin/sh
+echo
+echo '---------------------------- Setting Environment -------------------------'
+echo 
+echo '------- Setting Compiler -------'
+echo 'Present fortran version'
+ftn -V
+echo
+echo 'module switch from cray to intel'
+module switch PrgEnv-cray PrgEnv-intel
+module unload cray-libsci
+echo
+echo 'Presetn fortran version after switch'
+echo 'ftn -V'
+echo
+ftn -V
+echo 
+#echo '------- Setting ~/.bashrc -------'
+#echo 'Command: ls --color=auto'
+##alias "ls=ls --color=auto"
+#source ~/.bashrc
+#echo
+echo '---------------------------- Setting Completed ---------------------------'
+#echo

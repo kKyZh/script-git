@@ -1,0 +1,254 @@
+#!/bin/bash
+echo
+echo 'Script for summarizing *.out files into *_iv.dat (Version-1.92//Jun/03/2019)'
+echo 'With a subproject getiv2datf90'
+
+while true; do
+  echo
+  echo 'Which style you would like to use?'
+  echo '(1) by the range of eV'
+  echo '(2) by selecting each file'
+  echo '(Q) Quit'
+  read -p "==>  " -e chs_stl
+  history -s "$chs_stl" 2>/dev/null
+  case $chs_stl in
+    1)
+      echo
+      echo 'You choose (1)'
+      break 1
+      ;;
+    2)
+      echo
+      echo 'You choose (2)'
+      break 1
+      ;;
+    [qQ]*)
+      echo
+      echo 'You choose quit... bye'
+      echo
+      exit
+      ;;
+    *)
+      echo
+      echo 'Error : Please choose (1) or (2) or quit'
+  esac
+done
+
+if [[ $chs_stl -eq 1 ]]; then
+  
+  while true; do
+    chk_nu='^[+-]?[0-9]+([.][0-9]+)?$'
+    echo
+    echo 'Please enter the minimum value'
+    echo '(min = eV)'
+    read -p "==>  " -e chs_min
+    history -s "$chs_min" 2>/dev/null
+    # minus value has a problem 
+    # cannot show up 
+    # will be seen as a history argument
+    # dev/null for slience error
+    # find a new way later
+    if [[ ! $chs_min =~ $chk_nu ]] 2>/dev/null; then
+      echo
+      echo 'Error : Need a number'
+    else
+      break 1
+    fi
+  done
+
+  while true; do
+    echo
+    echo 'Please enter the maximum value'
+    echo '(min <= max )'
+    read -p "==>  " -e chs_max
+    history -s "$chs_max" 2>/dev/null
+    if [[ ! $chs_max =~ $chk_nu ]] 2>/dev/null; then
+      echo
+      echo 'Error : Need a number'
+    elif (($(echo "$chs_max < $chs_min" | bc -l))) 2>/dev/null; then
+      echo
+      echo 'Error : Need min <= max'
+      flotnu_min=${chs_min#*.}
+      nu_min=${#flotnu_min}
+      echo 'Minimum : '$(bc <<< "scale=0; $chs_min" |awk -v nu_min="$nu_min" '{printf "%.*f", nu_min, $0}')
+    else
+      break 1
+    fi
+  done
+  chs_rang=$(echo "$chs_max - $chs_min" |bc -l)
+  if [[ $chs_rang =~ "." ]]; then
+  flotnu_rang=${chs_rang#*.}
+  nu_rang=${#flotnu_rang}
+  else
+    flotnu_rang=0
+    nu_rang=0
+  fi
+  echo $nu_rang, $flotnu_rang
+
+if (($(echo "$chs_max != $chs_min" | bc -l))) 2>/dev/null; then
+  while true; do
+    echo
+    echo 'Please enter the interval value'
+    echo '( 0 < interval <= '$(bc <<< "scale=0; $chs_rang" |awk -v nu_rang="$nu_rang" '{printf "%.*f", nu_rang, $0}') ')'
+    read -p "==>  " -e chs_intvl
+    history -s "$chs_intvl" 2>/dev/null
+    if [[ ! $chs_intvl =~ $chk_nu ]] 2>/dev/null; then
+      echo
+      echo 'Error : Need a number'
+    elif (($(echo "$chs_intvl > $chs_rang" | bc -l))) || (($(echo "$chs_intvl <= 0" | bc -l))) 2>/dev/null; then
+      echo
+      echo 'Error : Need 0 < interval <= '$chs_rang
+    else
+      nu_fil=$(bc <<< "scale=0; $chs_rang/$chs_intvl")
+      chk_fil=$(bc <<< "scale=0; $chs_rang%$chs_intvl")
+      # need to be improved
+      if (($(echo "$chk_fil != 0" |bc -l))); then
+        echo
+        echo 'Error : Try a value which can divide the range ==> '$(bc <<< "scale=0; $chs_rang" |awk -v nu_rang="$nu_rang" '{printf "%.*f", nu_rang, $0}')
+      else
+        break 1
+      fi
+    fi
+  done
+else
+  chs_intvl=0
+fi
+
+  while true; do
+    echo
+    ls *.out
+  echo
+  read -p "Please select one file as a template of a serie of filenames : " -e filna
+  history -s "$filna"
+  if [[ ! -f $filna ]]; then
+    echo
+    echo Error: no exist file, enter again
+  else
+    if [[ ! $filna == *.out ]]; then
+      echo
+      echo Error: no "*.out" file selected, enter again
+    elif [[ ! $filna == *"_"* ]]; then
+      echo
+      echo 'Error : Filename should include "_" as a separate symbol, enter again'
+    else
+  
+      err_fil=0
+      coret_fil=0
+      flotnu_intvl=${chs_intvl#*.}
+      nu_intvl=${#flotnu_intvl}
+      ind_filna=$(bc <<< "scale=0; $chs_min" | awk -v nu_intvl="$nu_intvl" '{printf "%.*f", nu_intvl, $0}')
+      echo
+      echo '===================================================================================================='
+      for (( i=0; i<=$nu_fil; i++))
+      do
+          tmp_filna=${filna%_*}
+          filna=$tmp_filna'_'$ind_filna'v.out'
+        if [[ -f $filna ]]; then
+          fil_array=("${fil_array[@]}" $filna)
+          coret_fil=$((coret_fil+1))
+        else
+          echo
+          echo 'Error : File '$filna' not exist'
+          echo '      : Check it later manually'
+          err_fil=$((err_fil+1))
+        fi
+          ind_filna=$(bc <<< "scale=0; $ind_filna + $chs_intvl" | awk -v nu_intvl="$nu_intvl" '{printf "%.*f", nu_intvl, $0}')
+      done
+      break 1
+    fi
+  fi
+  done
+  echo
+  echo '----------------------------------------------------------------------------'
+  echo
+  echo 'Assumed total files : '$((nu_fil+1))
+  if [[ ${#fil_array[@]} -eq 0 ]]; then
+    echo
+    echo 'Error : No file selected'
+    echo
+    exit
+  elif [[ $err_fil -ne 0 ]]; then
+    echo
+    echo 'Warning : Selected files not equal to assumed files'
+    echo 'Selected files : '$coret_fil
+    echo
+    echo 'You selected : '${fil_array[@]}
+    while true; do
+      echo
+      echo 'Are you sure to continue? (Y/N)'
+      read -p "==>  " -e chs_yn
+      history -s "$chs_yn"
+      case $chs_yn in
+        [yY]*)
+          echo
+          echo '----------------------------------------------------------------------------'
+          break 1
+          ;;
+        [nN]*)
+          echo
+          echo 'You choose quit... bye'
+          echo
+          exit
+          ;;
+        *)
+      esac
+    done
+  else
+    echo
+    echo 'Selected files : '$coret_fil
+    echo
+    echo 'You selected : '${fil_array[@]}
+    echo
+    echo '----------------------------------------------------------------------------'
+  fi
+  getiv2datf90 $coret_fil ${fil_array[@]}
+
+  ############### select each files ##################
+  elif [[ $chs_stl -eq 2 ]]; then
+  
+  while true; do
+  echo
+  ls *.out
+echo
+read -p "How many files: " -e nu_fil
+history -s "$nu_fil" 2>/dev/null
+if [[ $nu_fil -le 0 ]]; then
+  echo
+  echo Error : at least 1 file needs to be run
+  echo Enter again
+else
+  i=1
+  break 1
+fi
+done
+
+while true; do
+  echo
+  ls *.out
+echo
+read -p "Filename: " -e filna
+history -s "$filna"
+if [[ ! -f $filna ]]; then
+  echo
+  echo Error: no exist file, enter again
+else
+  if [[ ! $filna == *.out ]]; then
+    echo
+    echo Error: no "*.out" file selected, enter again
+  else
+  fil_array=("${fil_array[@]}" $filna)
+  if [[ $i -eq $nu_fil ]]; then
+    break 1
+  else
+  i=$(($i+1))
+  fi
+  fi
+fi
+done
+echo
+echo '----------------------------------------------------------------------------'
+echo
+echo 'You selected : '${fil_array[@]}
+getiv2datf90 $nu_fil ${fil_array[@]}
+
+fi

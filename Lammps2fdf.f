@@ -1,0 +1,96 @@
+      program Lammps2fdf
+
+      integer*4 i, j, k, ll, num, types, ele_num, no, id(1000)
+      integer*4 num_ele(10), atom1(10), atom2(10), isa1, isa2
+      integer*4 count, x_sort(10,1000), t_sort(1000)
+      real*8    min(3), max(3), mass(10), pos(1000,3), xp
+      character*64 dummy, filename
+      character*3 name(10)
+
+      call getarg(1,filename)
+      open(20,FILE=filename, form='formatted', status='old',
+     $     err=99,access='sequential')
+      open(30,FILE='position.fdf', form='formatted', 
+     $     status='unknown',access='sequential')
+
+      read(20,'(A64)')dummy
+      read(20,'(I8)')num
+      read(20,'(I3)')types
+      read(20,*)min(1), max(1)
+      read(20,*)min(2), max(2)
+      read(20,*)min(3), max(3)
+      read(20,'(A64)')dummy
+      read(20,'(A64)')dummy
+      read(20,'(A64)')dummy
+      ele_num = 0
+      num_ele = 0
+
+      do i=1, types
+         write(*,'(A26,I3,1X,A7)')
+     $        'Please enter the name of #',i,'element'
+         read(5,*) name(i)
+      end do
+         
+      do i=1, num
+         read(20,*)no,id(i),(pos(i,j),j=1,3)
+         write(*,*)(pos(i,j),j=1,3)
+         num_ele(id(i)) = num_ele(id(i))+1
+         if(id(i) > ele_num) then
+            ele_num = id(i)
+         endif
+      end do
+
+      num = 0
+      do i=1, ele_num
+         atom1(i) = num+1
+         atom2(i) = num+num_ele(i)
+         num = atom2(i)
+         write(*,*) 'num ele',i, '=',num_ele(i)
+      end do
+      
+      do i=1, ele_num
+         isa1 = atom1(i)
+         write(*,*)isa1
+         isa2 = atom2(i)
+         write(*,*)isa2
+
+         count = 0
+         do j= isa1, isa2
+            if(j == isa1) then
+               x_sort(i,1) = j
+               t_sort(1) = j
+               count = 1
+            else
+               do k=1, count
+                  xp = pos(x_sort(i,k),1)
+                  if(pos(j,1) < xp) then
+                     do ll=k, count
+                        t_sort(ll+1) = x_sort(i,ll)
+                     end do
+                     t_sort(k) = j
+                     exit
+                  else if(k == count) then
+                     t_sort(k+1) = j
+                  endif
+               end do
+               count = count +1
+               do mm =1, count
+                  x_sort(i,mm) = t_sort(mm)
+               end do
+            endif
+         end do
+      end do
+
+
+      write(30,*)'%block AtomicCoordinatesAndAtomicSpecies'
+      do i=1, ele_num
+         do j=1, num_ele(i)  
+            k = x_sort(i,j)
+            write(30,'(3(F12.7),1X,I2,1X,A3)') 
+     $        (pos(k,ll),ll=1,3),id(k),name(i)
+         end do
+      end do
+      write(30,*)'%endblock AtomicCoordinatesAndAtomicSpecies'
+            
+ 99   stop
+      end

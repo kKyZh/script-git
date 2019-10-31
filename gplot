@@ -1,0 +1,32 @@
+#!/bin/bash
+filnam1=$1
+filnam2=$2
+
+lfilnam1=$((${#filnam1}-9))
+lbnam1=${filnam1:5:$lfilnam1}
+lfilnam2=$((${#filnam2}-9))
+lbnam2=${filnam2:5:$lfilnam2}
+
+###gpfil=$3
+###/usr/bin/gnuplot -persist -e "filnam1='${nam1}'; filnam2='${nam2}'" $gpfil
+###/usr/bin/gnuplot -persist -e "filnam1='${nam1}'; filnam2='${nam2}'" <<EOF 
+
+###gnuplot -persist <<EOF 
+gnuplot -p <<EOF 
+set term png font "arial,20" size 640,480
+set output "plot.png"
+set title "Check again" offset 0,-0.85,0
+set border lw 2
+set xlabel "Energy (eV)" offset 0,1.25,0
+set xtics offset 0,0.5,0
+set xrange [ -1.0 : 1.0 ] 
+set ylabel "LDOS" offset 2.6,0,0 rotate by 90
+set ytics offset 0.75,0,0
+set yrange [ 0.0 : 1.0 ]
+set key samplen 0.2 spacing 0.8 right
+###plot "$filnam1" title "$lbnam1" w l lc rgb "red" lw 2
+plot "$filnam1" title "$lbnam1" w l lc rgb "red" lw 2, "$filnam2" title "$lbnam2" w l lc rgb "blue" lw 2
+set term qt font "arial,20" size 640,480
+set output 
+replot
+EOF

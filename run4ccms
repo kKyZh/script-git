@@ -1,0 +1,302 @@
+#!/bin/bash
+#Run4siesta prepare the file
+echo
+echo
+echo "This is the script for creating .fdf file to be calculated in SIESTA from .car file"
+echo
+echo "Please prepare the potential file named as C.psf (Carbon potential) and H.psf (Hydrogen potential) in the new directory called potential4siesta"
+echo "Also please prepare CH.airebo file in the new directory for calculating the potential and force between Carbon and Hydrogen"
+echo
+echo "The script is running now..."
+echo "Checking the potential file in new directory: potential4siesta"
+echo
+
+	if [ -f ./potential4siesta/C.psf -a -f ./potential4siesta/H.psf -a -f ./potential4siesta/CH.airebo ]; then
+		echo "All the needed potential files exist"
+		echo
+
+	elif [ ! -e potential4siesta ]; then
+		echo "You don't have the potential4siesta directory"
+		echo "Do you want to creat the directory? (Y for Yes, N for No)"
+		while true; do
+		read choose1
+		case $choose1 in
+		[Yy]*)	
+		echo
+		mkdir potential4siesta
+		echo "potential4siesta directory is created, please copy the needed potential files to this directory, bye..."
+		echo
+		ls -dl potential4siesta
+		echo
+		exit
+		;;
+		[Nn]*)
+		echo
+		echo "Then creat the directory and copy potential files in it first, bye..."
+		echo
+		exit
+		;;
+		*)
+		echo
+		echo "Please choose Yes or No for continuing..."
+		esac
+		done
+
+	elif [ ! -f ./potential4siesta/C.psf -o ! -f ./potential4siesta/H.psf -o ! -f ./potential4siesta/CH.airebo ]; then
+		echo "You missed at least one potential file in potential4siesta directory, please go and copy it first, bye..."
+		echo
+		exit
+	fi
+echo "Checking completed... Copying file from potential4siesta..."
+cp ./potential4siesta/* .
+echo "Copying completed..."
+echo
+	ls -l C.psf H.psf CH.airebo
+echo
+
+echo ".car file checking"
+echo
+
+nu_fil1=`ls -f *.car 2>/dev/null | wc -l` #hide the error of no .car file
+	if [[ $nu_fil1 -eq 0 ]]; then
+	echo "There is no .car file, please check again and go to create one, bye..."
+	echo
+	exit
+
+	elif [[ $nu_fil1 -eq 1 ]]; then
+	echo "You have only one .car file"
+	echo 
+	ls *.car
+	echo
+	echo "Do you want to run4siesta? (Y for Yes, N for No)"
+	while true; do
+	read choose2
+	case $choose2 in
+	[Nn]*)
+	echo
+	echo "See you then, bye..."
+	echo
+	exit
+	;;
+	[Yy]*)
+	filename1=*.car
+	echo $filename1
+	echo
+	break 1
+	;;
+	*)
+	echo
+	echo "Please choose Y for Yes, N for No"
+	esac
+	done
+	
+	elif [[ $nu_fil1 -gt 1 ]]; then
+	echo "You have more than one .car file, please choose one for calculating."
+	echo
+	ls *.car
+	echo
+	echo "Please input one of above files:"	
+
+	while true; do
+	read -e filename1
+
+	if [ ! -f $filename1 ]; then
+	echo
+	ls *.car
+	echo
+	echo "Please input the correct existed file"
+	
+	# still can not add the function to check the subroutine has the space or not and why enter can pass the loop
+
+	else
+	echo
+	echo "file $filename1 run"
+	echo
+	break 1
+	fi
+	done
+	fi
+
+# from here using expect to auto input 
+# only check the input of lines already exist
+# revise it manually if you have more atom types
+# still something wrong later needs to check error and quit
+
+echo
+echo "---------------------------------------------- WARINING INFORMATION ----------------------------------------------------------"
+echo "From here using spawn shell scrip and expect for auto-input"
+echo "If you input a wrong character please run it again from beginning"
+echo "You CAN NOT use backspace to delet character in expect shell command (still finding how)"
+echo "Therefore, you need input ^Z, then input enter to jump out from expect then ctrl + Z or ^Z or other commands to stop the script"
+echo "sorry for the inconvinent, still trying to find how to solve this problem"
+echo "Please enjoy and if you have any commands, tell me, thank you!"
+echo "------------------------------------------------------------------------------------------------------------------------------"
+echo
+echo "Running...	car2Lammpsf90"
+echo
+auto_car2Lammpsf90 $filename1 # 3 elements C C H
+#car2Lammpsf90 $filename1
+echo
+echo "car2Lammpsf90 finishied"
+echo
+echo "---------------------------------------------- WARINING INFORMATION ----------------------------------------------------------"
+echo "From here using spawn shell scrip and expect for auto-input"
+echo "If you input a wrong character please run it again from beginning"
+echo "You CAN NOT use backspace to delet character in expect shell command (still finding how)"
+echo "Therefore, you need input ^Z, then input enter to jump out from expect then ctrl + Z or ^Z or other commands to stop the script"
+echo "sorry for the inconvinent, still trying to find how to solve this problem"
+echo "Please enjoy and if you have any commands, tell me, thank you!"
+echo "------------------------------------------------------------------------------------------------------------------------------"
+echo
+echo "Running...	crtfil4lammpsf90"
+echo
+crtfil4lammpsf90 # read and create
+echo
+echo "crtfil4lammpsf90 finished"
+echo
+echo "---------------------------------------------- WARINING INFORMATION ----------------------------------------------------------"
+echo "From here using spawn shell scrip and expect for auto-input"
+echo "If you input a wrong character please run it again from beginning"
+echo "You CAN NOT use backspace to delet character in expect shell command (still finding how)"
+echo "Therefore, you need input ^Z, then input enter to jump out from expect then ctrl + Z or ^Z or other commands to stop the script"
+echo "sorry for the inconvinent, still trying to find how to solve this problem"
+echo "Please enjoy and if you have any commands, tell me, thank you!"
+echo "------------------------------------------------------------------------------------------------------------------------------"
+echo
+echo "Running...	lammps"
+echo
+lammps < in.min
+echo
+echo "lammps  finished"
+echo
+echo "---------------------------------------------- WARINING INFORMATION ----------------------------------------------------------"
+echo "From here using spawn shell scrip and expect for auto-input"
+echo "If you input a wrong character please run it again from beginning"
+echo "You CAN NOT use backspace to delet character in expect shell command (still finding how)"
+echo "Therefore, you need input ^Z, then input enter to jump out from expect then ctrl + Z or ^Z or other commands to stop the script"
+echo "sorry for the inconvinent, still trying to find how to solve this problem"
+echo "Please enjoy and if you have any commands, tell me, thank you!"
+echo "------------------------------------------------------------------------------------------------------------------------------"
+echo
+echo "Running...	getdumpf90"
+echo
+auto_getdumpf90 # name C C H as new three label
+#getdumpf90 dump.GNR
+echo
+echo "getdumpf90 finished"
+echo
+echo "---------------------------------------------- WARINING INFORMATION ----------------------------------------------------------"
+echo "From here using spawn shell scrip and expect for auto-input"
+echo "If you input a wrong character please run it again from beginning"
+echo "You CAN NOT use backspace to delet character in expect shell command (still finding how)"
+echo "Therefore, you need input ^Z, then input enter to jump out from expect then ctrl + Z or ^Z or other commands to stop the script"
+echo "sorry for the inconvinent, still trying to find how to solve this problem"
+echo "Please enjoy and if you have any commands, tell me, thank you!"
+echo "------------------------------------------------------------------------------------------------------------------------------"
+echo
+echo "Running...	Preparing the potential file for SIESTA"
+echo
+auto_cpfil4pe_sh # copy potential files and rename them
+echo
+echo "Running...	Copy potential file compeleted"
+echo
+echo "---------------------------------------------- WARINING INFORMATION ----------------------------------------------------------"
+echo "From here using spawn shell scrip and expect for auto-input"
+echo "If you input a wrong character please run it again from beginning"
+echo "You CAN NOT use backspace to delet character in expect shell command (still finding how)"
+echo "Therefore, you need input ^Z, then input enter to jump out from expect then ctrl + Z or ^Z or other commands to stop the script"
+echo "sorry for the inconvinent, still trying to find how to solve this problem"
+echo "Please enjoy and if you have any commands, tell me, thank you!"
+echo "------------------------------------------------------------------------------------------------------------------------------"
+echo
+echo "Please check it later" # add the function of check and show automatically
+echo
+echo "Running...	crtfile4siesta"
+echo
+auto_crtfil4siesta4ccmsf90 # name a new input .fdf file use interact in expect
+echo
+echo "Input data .fdf created"
+echo
+rm CH.airebo C.psf data.lammps dump.GNR getdata.lammps in.min log.lammps tempdata2.dat tempdata.dat tempforcar2lammps2.dat tempforcar2lammps.dat
+echo "Files CH.airebo C.psf data.lammps dump.GNR getdata.lammps in.min log.lammps tempdata2.dat tempdata.dat tempforcar2lammps2.dat tempforcar2lammps.dat removed"
+echo
+echo "Files4ccms are listed below"
+echo
+ls -p1 | grep -v / 
+echo
+echo "Fin"
+echo
+#echo "Run SIESTA	to be continued"
+#echo
+#echo ".fdf file checking"
+#echo
+#
+#nu_fil2=`ls -f *.fdf 2>/dev/null | wc -l` #hide the error of no .car file
+#	if [[ $nu_fil2 -eq 0 ]]; then
+#	echo "There is no .fdf file, please check again and go to create one, bye..."
+#	echo
+#	exit
+#
+#	elif [[ $nu_fil2 -eq 1 ]]; then
+#	echo "You have only one .fdf file"
+#	echo 
+#	ls *.fdf
+#	echo
+#	echo "Do you want to run it? (Y for Yes, N for No)"
+#	while true; do
+#	read choose3
+#	case $choose3 in
+#	[Nn]*)
+#	echo
+#	echo "See you then, bye..."
+#	echo
+#	exit
+#	;;
+#	[Yy]*)
+#	siestaname=*.fdf
+#	echo "Run $siestaname"
+#	echo
+#	break 1
+#	;;
+#	*)
+#	echo
+#	echo "Please choose Y for Yes, N for No"
+#	esac
+#	done
+#	
+#	elif [[ $nu_fil2 -gt 1 ]]; then
+#	echo "You have more than one .fdf file, please choose one for calculating."
+#	echo
+#	ls *.fdf
+#	echo
+#	echo "Please input one of above files:"	
+#
+#	while true; do
+#	read -e siestaname
+#
+#	if [ ! -f $siestaname ]; then
+#	echo
+#	ls *.fdf
+#	echo
+#	echo "Please input the correct existed file"
+#	
+#	# still can not add the function to check the subroutine has the space or not and why enter can pass the loop
+#
+#	else
+#	echo
+#	echo "Run $siestaname file"
+#	echo
+#	break 1
+#	fi
+#	done
+#	fi
+##echo ".fdf file checking completed"
+##echo
+##echo "Please input how many nodes you want to use? (Integer)" # need to be checked how to recognize integer
+#read nu_mp
+#echo
+#echo "Running SIESTA"
+#echo
+#run_name="${siestaname//.fdf}" # delet .fdf from siestaname
+#mpirun -np $nu_mp siesta_para < $run_name.fdf | tee $run_name.out
+#echo

@@ -1,0 +1,64 @@
+############# Initial definitions ###########
+SystemLabel		tss_DGNR17_7_s
+NumberOfAtoms		290
+NumberOfSpecies		4
+
+%block ChemicalSpeciesLabel
+	1	6	Cwid
+	2	6	Cnar
+	3	6	Celec
+	4	1	H
+%endblock ChemicalSpeciesLabel
+
+################ Coordinates #######
+AtomicCoordinatesFormat	Ang
+AtomicCoordinatesAndAtomicSpecies <	tss_position.fdf
+
+##### Structural (lattace) information #####
+LatticeConstant	1.0	Ang
+%block LatticeParameters
+  10.001479  40.314442   4.309302 90.0000 90.0000 90.0000
+%endblock LatticeParameters
+
+######## k-points for sampling #########
+
+%block kgrid_Monkhorst_Pack
+   1   0   0 0.5
+   0   3   0 0.5
+   0   0   3 0.5
+%endblock kgrid_Monkhorst_Pack
+
+#############################################
+Denchar.TypeOfRun 3D
+Denchar.PlotCharge  T
+Denchar.PlotWaveFunctions T
+Denchar.CoorUnits Ang
+Denchar.DensityUnits  Ele/Ang**3
+
+Denchar.NumberPointsX 100
+Denchar.NumberPointsY 100
+Denchar.NumberPointsZ 100
+
+#############################################
+Denchar.MinX  0.0 Ang
+Denchar.MaxX  +10.001479   Ang
+Denchar.MinX  0.0 Ang
+Denchar.MaxX  +40.314442   Ang
+Denchar.MinX  0.0 Ang
+Denchar.MaxX  +4.309302    Ang
+
+#############################################
+Denchar.PlaneGeneration NormalVector
+
+%block Denchar.CompNormalVector
+ 0.000 0.000 1.000
+%endblock Denchar.CompNormalVector
+
+%block Denchar.PlaneOrigin
+ 0.000 0.000 0.000
+%endblock Denchar.PlaneOrigin
+
+%block Denchar.X-Axis
+ 1.000 0.000 0.000
+%endblock Denchar.X-Axis
+
