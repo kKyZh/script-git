@@ -1,0 +1,34 @@
+      module m_fdf2xyz_print
+
+        private
+        public fdf2xyz_print
+
+        contains
+
+        subroutine fdf2xyz_print(content)
+
+        implicit none
+        
+        logical chk_content ! T & F are better
+
+        character(len=*), intent(in), optional :: content
+
+        if (len_trim(content) .gt. 0) then
+          chk_content = .true.
+
+        elseif (len_trim(content) .eq. 0) then
+          chk_content = .false.
+
+        endif
+
+        if (chk_content .eq. .true.) then
+          write(*,'(1x, a)') adjustl(trim(content))
+
+        elseif(chk_content .eq. .false.) then
+          write(*,*) "Nothing inputted..."
+
+        endif
+        
+        endsubroutine fdf2xyz_print
+
+      endmodule m_fdf2xyz_print

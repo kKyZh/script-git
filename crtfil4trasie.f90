@@ -51,7 +51,7 @@
         write(*,*)
         write(*,'(1x,3a)')'Running... Creating *.fdf input file ',&
                 'for SIESTA/TranSIESTA... ',&
-                '(Version --2.22 //May/17/2019//)'
+                '(Version --2.23 //March/1/2020//)'
         write(*,*)
         write(*,*)'Include manual option: -h '
         write(*,*)'By using ==> car2Lammps -h '
@@ -684,7 +684,7 @@
 
 !---------------------- Output of Selected Wavefunctions --------------------
         allocate(elct_el(nutot_sp))
-        allocate(nu_wv(6))!6 waves will be calculated
+        allocate(nu_wv(10))!10 waves will be calculated
         sum_elct=0
         write(*,*)'---- Output of Selected Wavefunctions -----'
         write(*,*)' '
@@ -713,10 +713,10 @@
 
         nu_ho=sum_elct/2
 
-        do i=1,6
-        nu_wv(i)=nu_ho-3
+        do i=1,10
+        nu_wv(i)=nu_ho-5
         enddo
-        do i=1,6
+        do i=1,10
         nu_wv(i)=nu_wv(i)+i!start from ho -2
         enddo
 
@@ -725,9 +725,9 @@
         write(30,'(3a)')'WaveFuncKPointsScale',trim(tab),'pi/a'
                                 !unit of k-points
         write(30,'(a)')'%block WaveFuncKPoints'
-        write(30,'(3(1x,a),6(1x,i5))')'0.000','0.000'&
+        write(30,'(3(1x,a),10(1x,i5))')'0.000','0.000'&
                         ,'0.000',&
-                       ((nu_wv(i)),i=1,6)
+                       ((nu_wv(i)),i=1,10)
         write(30,'(a)')'%endblock WaveFuncKPoints'
         write(30,*)' '
         !----.band.wfsx. full.wfsx energy band index selection -------
@@ -740,7 +740,7 @@
         write(30,'(a)')&
           "##### fullbz.wfsx .band.wfsx. band index selection ########"
         write(30,'(2a,i0)')'WFS.BandMin',trim(tab),nu_wv(1)
-        write(30,'(2a,i0)')'WFS.BandMax',trim(tab),nu_wv(6)
+        write(30,'(2a,i0)')'WFS.BandMax',trim(tab),nu_wv(10)
         write(30,*)' '
 
 !---------------------- Density of States (DOS) --------------------

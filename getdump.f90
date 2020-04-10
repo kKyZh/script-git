@@ -561,7 +561,7 @@
         enddo
         num_ele_low=1
         num_ele_hi=0
-        write(50,*)'%block AtomicCoordinatesAndAtomicSpecies' 
+        write(50,'(a)')'%block AtomicCoordinatesAndAtomicSpecies' 
         do i=1,maxid
                 num_ele_hi=num_ele_hi+num_ele(i)
                 do j=num_ele_low,num_ele_hi
@@ -571,7 +571,7 @@
                 enddo 
         num_ele_low=num_ele_low+num_ele(i)
         enddo
-        write(50,*)'%endblock AtomicCoordinatesAndAtomicSpecies' 
+        write(50,'(a)')'%endblock AtomicCoordinatesAndAtomicSpecies' 
 
         write(*,*)' '
         write(*,*)'Outputing completed'

@@ -2,5 +2,5 @@
 echo
 echo '### Check the disk quota and amount of data on own home directory ###'
 echo
-lfs quota -u boom9000 /home
+lfs quota -uh boom9000 /home
 echo

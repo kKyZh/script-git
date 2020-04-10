@@ -2,9 +2,9 @@ set encoding=utf-8
 set nocompatible              " be iMproved, required
 filetype off                  " required
 
-let g:ycm_path_to_python_interpreter = '/uhome/a00916/src/python3/bin/python3'
-let g:ycm_server_python_interpreter = '/uhome/a00916/src/python3/bin/python3'
-let g:python3_host_prog = '/uhome/a00916/src/python3/bin/python3'
+let g:ycm_path_to_python_interpreter = '/home/boom9000/anaconda3/bin/python3'
+let g:ycm_server_python_interpreter = '/home/boom9000/anaconda3/bin/python3'
+let g:python3_host_prog = '/home/boom9000/anaconda3/bin/python3'
 
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
@@ -12,7 +12,9 @@ call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'Valloric/YouCompleteMe'
 Plugin 'christoomey/vim-tmux-navigator'
-
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'edkolev/tmuxline.vim'
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
@@ -338,12 +340,21 @@ set smarttab
 set wildmenu
 set wildmode=longest,list,full
 
+" set backup files on ==> ~ extension
+set backup
+
+" map oo or OO for insert one blank below or above line and then go back to previous line
+" only in normal mode
+nnoremap oo o<ESC>k
+nnoremap OO O<ESC>j
+
 " set 256 color
 
 " highlight syntax
 " 10=lime 50=cyan2 69=cornflowerblue 117=skyblue1 123=darkslategray1 
 " 166=darkorange3 176=plum3 197=deeppink2 205=hotpink 220=gold1 
 " 232=grey3 245=grey54 77=palegreen3 15=white
+" cursur color with system
 hi normal cterm=none ctermfg=7 guifg=#c0c0c0 ctermbg=232 guibg=#080808
 hi Comment cterm=none ctermfg=75 guifg=#5fafff
 hi statement cterm=none ctermfg=220 guifg=#ffd700
@@ -353,10 +364,21 @@ hi identifier cterm=none ctermfg=51 guifg=#00ffff
 hi special cterm=none ctermfg=176 guifg=#d787d7
 hi preproc cterm=none ctermfg=205 guifg=#ff5faf
 hi directory cterm=none ctermfg=77 guifg=#5fd75f
+hi matchparen cterm=none ctermbg=14 guibg=#00ffff ctermfg=232 guifg=#080808
+hi visual cterm=none ctermfg=16 guifg=#000000 ctermbg=252 guibg=#d0d0d0
 hi search cterm=none ctermfg=16 guifg=#000000 ctermbg=15 guibg=#ffffff
+hi todo term=reverse cterm=none ctermfg=16 guifg=#000000 ctermbg=15 guibg=#ffffff
+hi fortranObsolete term=reverse cterm=none ctermfg=16 guifg=#000000 ctermbg=15 guibg=#ffffff
+
 
 " set hilightsearch
 set hlsearch
+
+" set highlighting current line grey15
+set cursorline
+set cursorcolumn
+hi cursorline cterm=none ctermbg=235 guibg=#262626
+hi cursorcolumn cterm=none ctermbg=235 guibg=#262626
 
 " set nonumber
 set number relativenumber
@@ -376,3 +398,44 @@ let g:netrw_preview = 1
 " nerdtree setting
 map <C-s> :NERDTreeToggle<CR>
 autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+let NERDTreeChDirMode = 2
+
+" airline plugin setting
+let g:airline_powerline_fonts = 1
+let g:airline_theme = 'wombat'
+
+" tmuxline airline colot run vim inside tmux and create .tmuxlinecolor follow
+" the manual from the website
+
+" set ctrlp on
+set runtimepath^=~/.vim/bundle/ctrlp.vim
+
+" change the default mapping from ctrlp to ctrl-q ( stty start stop and quit )
+let g:ctrlp_map = '<c-q>'
+let g:ctrlp_cmd = 'CtrlP'
+let g:ctrlp_working_path_mode = 'a'
+" only search filename instead of full path <c-d> switch 'if on >d>'
+let g:ctrlp_by_filename = 1
+
+" need to use F5 to refresh the cache, it won't update automatically 0 not
+" refresh automatically
+let g:ctrlp_clear_cache_on_exit = 0
+
+set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*/vendor/*,*/\.git/*
+" Ignore For ctrlp
+" ag search the silver search is faster but lib error could not installed
+let g:ctrlp_custom_ignore = {
+  \ 'dir':  '\.git$\|\.hg$\|\.svn$\|\.yardoc\|public\/images\|public\/system\|data\|log\|tmp$',
+  \ 'file': '\.exe$\|\.so$\|\.dat$'
+  \ }
+
+" c-x for refresh cache as F5, disable F5, disable c-cr from h-split, only c-s
+" as h-split
+let g:ctrlp_prompt_mappings = {
+  \ 'PrtClearCache()': ['<c-x>'],
+  \ 'AcceptSelection("h")': ['<c-s>'],
+  \ }
+
+" nnoremap <silent> <expr> <c-q><c-s> (expand('%') =~ 'NERDTree' ? \<c-w>\<c-w> : '').":CtrlP\<cr>"
+
+" tagbar and syntastic

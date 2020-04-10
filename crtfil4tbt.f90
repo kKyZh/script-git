@@ -1,4 +1,7 @@
       program crtfil4tbtf90
+
+        use jsu_readline
+
         implicit none
         integer i,j
         integer status, rename ! rename a file
@@ -52,6 +55,7 @@
         character(32) isuffix ! write suffix in char
         character(32) tab ! tab
         character(128) targ_ln ! read dummy for each line
+        character(128) string ! readline
         logical fnd_ln_1 ! true or false for found the line
         logical fnd_ln_2 ! true or false for found the line
         logical chk_filex ! check file exist or not
@@ -101,7 +105,8 @@
         write(*,*)
         write(*,*)'Please enter the minimum of Voltage in real.'
         write(*,*)'(min < 100 eV)'
-        read(*,*)char_emin
+        call userreadline( char_emin, ' : ' )
+        !read(*,*)char_emin
         read(char_emin,*,iostat=chk_emin)emin
         if(chk_emin/=0)then
           goto 100
@@ -132,7 +137,8 @@
         write(*,*)'Please enter the maximum of Voltage in real.'
         write(*,'(1x,a,f<totlen_emin>.<deci_emin>,a)')&
           '(',emin,' eV <= max < 100 eV)'
-        read(*,*)char_emax
+        call userreadline( char_emax, ' : ' )
+        !read(*,*)char_emax
         read(char_emax,*,iostat=chk_emax)emax
         if(chk_emax/=0)then
           goto 101
@@ -172,9 +178,10 @@
         write(*,'(1x,a,f<totlen_rang>.<deci_rang>,a)')&
           'Please enter the interval which can divide ',&
           rang,' eV'
-          write(*,'(1x,a,f<totlen_emax>.<deci_emax>,a)')&
-            '(0.0 eV < Interval < ',emax,' eV)'
-        read(*,*)char_intl
+          write(*,'(1x,a,f<totlen_rang>.<deci_rang>,a)')&
+            '(0.0 eV < Interval < ',rang,' eV)'
+        call userreadline( char_intl, ' : ' )
+        !read(*,*)char_intl
         read(char_intl,*,iostat=chk_intl)intl
         if(chk_intl/=0)then
           goto 102
