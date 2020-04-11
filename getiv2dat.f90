@@ -20,8 +20,8 @@
 
         write(*,*)
         write(*,'(1x,3a)')'Running... get I-V value after TBTrans, ',&
-                'output a summarized *.dat file ',&
-                '(Version --1.0 beta//May/01/2019//)'
+                'output a summarized *.dat file (CSV format like)',&
+                '(Version --1.1 beta//Apr/12/2020//)'
         ! not include check the name of input file
 
         chk_arg=command_argument_count()
@@ -41,7 +41,7 @@
         do i=2,ind_nufl
         call get_command_argument(i, inpt_flnam(i))
         enddo
-        ind_strnu=scan(trim(inpt_flnam(2)),"_")
+        ind_strnu=scan(trim(inpt_flnam(2)),"_", .true.)
         otpt_flnam=''//inpt_flnam(2)(1:ind_strnu)//'iv.dat'
 
         do i=1,totfl
@@ -73,7 +73,7 @@
         enddo
 
 100     continue
-        write(2000,"(2(1x,f11.6))")vlt, curnt*1E06
+        write(2000,"(f11.6,a,f11.6)")vlt, ',', curnt*1E06
 
         enddo
         write(*,*)

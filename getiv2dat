@@ -75,7 +75,8 @@ if [[ $chs_stl -eq 1 ]]; then
       break 1
     fi
   done
-  chs_rang=$(echo "$chs_max - $chs_min" |bc -l)
+  #chs_rang=$(echo "$chs_max - $chs_min" |bc -l)
+  chs_rang=$(bc <<< "$chs_max - $chs_min")
   if [[ $chs_rang =~ "." ]]; then
   flotnu_rang=${chs_rang#*.}
   nu_rang=${#flotnu_rang}
@@ -83,7 +84,7 @@ if [[ $chs_stl -eq 1 ]]; then
     flotnu_rang=0
     nu_rang=0
   fi
-  echo $nu_rang, $flotnu_rang
+  #echo $nu_rang, $flotnu_rang
 
 if (($(echo "$chs_max != $chs_min" | bc -l))) 2>/dev/null; then
   while true; do
