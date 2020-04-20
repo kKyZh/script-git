@@ -55,11 +55,11 @@ fdf2xyzf90: $(OBJ)
 .c.o: 
 	$(cc) -c $< 
 
-writefilecheck.o: fdf2xyz_print.o
-userread.o: fdf2xyz_allocatable.o jsu_readline.o
-readatomname.o: fdf2xyz_allocatable.o
-fdf2xyz_readfile.o: fdf2xyz_print.o fdf2xyz_read2end.o readcharlen.o fdf2xyz_allocatable.o readatomname.o userread.o \
-	writefilecheck.o
+#writefilecheck.o: fdf2xyz_print.o
+#userread.o: fdf2xyz_allocatable.o jsu_readline.o
+#readatomname.o: fdf2xyz_allocatable.o
+fdf2xyz_readfile.o: fdf2xyz_read2end.o readcharlen.o fdf2xyz_allocatable.o readatomname.o userread.o \
+			writefilecheck.o #fdf2xyz_print.o 
 jsu_readline.o: FCreadline.o
 fdf2xyz_inputfilename.o: fdf2xyz_print.o
 fdf2xyz.o: fdf2xyz_inputfilename.o fdf2xyz_print.o jsu_readline.o fdf2xyz_readfile.o 

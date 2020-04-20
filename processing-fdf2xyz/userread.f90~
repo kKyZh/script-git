@@ -35,7 +35,8 @@
 100       continue
 
           ! directly pass array to C and interface then return back
-          call userreadline(input_at_nam(i), ''//r_at_nam(i)//' -> ')
+          call userreadline(input_at_nam(i), &
+            ''//trim(adjustl(r_at_nam(i)))//' -> ')
 
           if (len_trim(input_at_nam(i)) .eq. 0 ) then
           write(*,*) 'ERROR: Please enter at least one character'
@@ -50,6 +51,7 @@
 
           do i = 1, nu_at_nam
           output_at_nam(i) = input_at_nam(i)
+          !write(*,*)output_at_nam(i)
           enddo
 
           call dealloc_char( input_at_nam, input_charlen)

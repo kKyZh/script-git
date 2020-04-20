@@ -30,21 +30,26 @@
             read(fileindex, '(a40, (a))') dummy, at_nam(i)
 
             if( i .eq. 1) then
-              r_at_nam(k) = at_nam(i)
+              r_at_nam(k) = trim(adjustl(at_nam(i)))
             endif
 
             if( i .gt. 1) then
 
+              ! with / without adjustl(trim()) no significant effort
               l = 1 ! check different species
               do j = 1, k
-              if( r_at_nam(k) .ne. at_nam(i)) then
+              if( trim(adjustl(r_at_nam(j))) &
+                .ne. trim(adjustl(at_nam(i)))) then
                 l = l + 1
               endif
               enddo
 
+              !write(*,*)'i,l,k, r_at, at', i,l,k,'!',&
+              !  trim(adjustl(r_at_nam(k))), trim(adjustl(at_nam(i))),'!'
+
               if(l .gt. k) then
                 k = k + 1
-                r_at_nam(k) = at_nam(i)
+                r_at_nam(k) = trim(adjustl(at_nam(i)))
                 !write(*,*)k
               endif
               !write(*,*)at_nam(i), r_at_nam(k), l, k, r_at_nam(k), charlen

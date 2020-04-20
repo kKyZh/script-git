@@ -26,7 +26,6 @@
         
         write(*,*)
         write(*,*) '----------------------------------------'
-        write(*,*)
         content = "fdf2xyz --version 1.0-- //7.Apr.2020//"
         call fdf2xyz_print(content)
 

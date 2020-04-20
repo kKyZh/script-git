@@ -34,6 +34,8 @@ echo cp fdf2xyz.f90 ../
 echo cp fdf2xyz.f90 ../backup
 echo cp fdf2xyz.f90 ~/script-git
 echo cp fdf2xyzf90 ~/bin
+echo cp -r ../processing-fdf2xyz ../backup
+echo cp -r ../processing-fdf2xyz ../../script-git
 echo
 #
 #cp crtfil4trasie.f90 ../
@@ -69,3 +71,5 @@ cp fdf2xyz.f90 ../
 cp fdf2xyz.f90 ../backup
 cp fdf2xyz.f90 ~/script-git
 cp fdf2xyzf90 ~/bin
+cp -r ../processing-fdf2xyz ../backup
+cp -r ../processing-fdf2xyz ../../script-git

@@ -96,19 +96,22 @@
 
             do i = 1, tot_at_nu
             do j = 1, nu_at_nam
-            if (at_nam(i) .eq. r_at_nam(j)) then
+            if (trim(adjustl(at_nam(i))) &
+              .eq. trim(adjustl(r_at_nam(j)))) then
               at_nam(i) = output_at_nam(j)
+              ! trim(adjustl()) can eliminate troubles sometime
             endif
             enddo
             ! origin .xyz has only one digit for element
             ! left 2 digit position as at_nam, -> 4x to 3x
+            ! space is not important, due to different name
             write(fileindexout, &
               '(a<output_charlen>, 3x, 3(1x, f11.6))') & 
-              at_nam(i), pos_x(i), pos_y(i), pos_z(i)
+              adjustl(at_nam(i)), pos_x(i), pos_y(i), pos_z(i)
             enddo
 
             write(*,*)
-            write(*,*)filewrite, 'File created'
+            write(*,*)filewrite, ' File created'
 
             call dealloc_int( at_ind )
             call dealloc_real( pos_x, pos_y, pos_z )

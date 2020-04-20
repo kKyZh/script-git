@@ -56,7 +56,7 @@ if [[ $chs_slt -eq 1 ]]; then
   echo
 
   echo
-  tot_fil=($(find . -type f \( -name "run_*.sh" -o -name "run.sh" \) -printf '%f\t'; echo))
+  tot_fil=($(find . -maxdepth 1 -type f \( -name "run_*.sh" -o -name "run.sh" \) -printf '%f\t'; echo))
   nu_fil=${#tot_fil[@]}
   # echo newline, \t is tab the last variable can not give a newline
   # find file name print %f removed leading directories \n newline
@@ -195,7 +195,7 @@ elif [[ $chs_slt -eq 3 ]]; then
   echo
 
   echo
-  tot_fil=($(find . -type f \( -name "run_added_*.sh" -o -name "run_added.sh" \) -printf '%f\t'; echo))
+  tot_fil=($(find . -maxdepth 1 -type f \( -name "run_added_*.sh" -o -name "run_added.sh" \) -printf '%f\t'; echo))
   nu_fil=${#tot_fil[@]}
   # echo newline, \t is tab the last variable can not give a newline
   # find file name print %f removed leading directories \n newline
