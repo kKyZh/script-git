@@ -26,7 +26,6 @@
         real real_check ! mod, amod, dmod are not working well
         integer len_strain_nam ! length of strain_nam real
         integer len_fra_strain_nam ! length of fraction of strain_name
-        integer len_fra_percent ! length of fraction of percent
         integer len_int_strain_nam ! real part of strain_name
         integer, allocatable :: id(:)
         integer, pointer :: num_ele(:)
@@ -202,7 +201,6 @@
           if( len_fra_strain_nam .lt. 0) then
             len_fra_strain_nam = 0
           endif
-          len_fra_percent = len_fra_strain_nam
           len_fra_strain_nam = len_fra_strain_nam + 2
           len_strain_nam = len_int_strain_nam + len_fra_strain_nam
           if( strain_lo .eq. strain_hi) then
@@ -218,23 +216,6 @@
           write(strain_chr_nam, &
             '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
           write(*,'(2a)') trim(adjustl(strain_chr_nam)), '#'
-          if( len_fra_percent .eq. 0) then
-          write(*,'(1x, i0, a)') &
-            int(strain_i), '%'
-          else
-          write(*,'(1x, f<len_strain_nam>.<len_fra_percent>,a)') &
-            strain_i, '%'
-          endif
-          !write(strain_chr_nam, '(i0)') i
-          status = system( &
-            'mkdir strain_'&
-            !//trim(adjustl(strain_chr_chs))//'%')
-            //trim(adjustl(strain_chr_nam))//&
-              ' 2>/dev/null')
-          if( status .ne. 0) then
-            write(*,*) 'file '//trim(adjustl(strain_chr_nam))//&
-              ' not created'
-          endif
           !strain_nam = (strain_hi - strain_lo) + 100) / 100
           !len_strain_nam = size( strain_nam)
           !len_fra_strain_nam = &
@@ -258,6 +239,20 @@
 
 
 
+
+          do i = 1, 3
+          write(strain_chr_nam, '(i0)') i
+          status = system( &
+            'mkdir strain_'&
+            !//trim(adjustl(strain_chr_chs))//'%')
+            //trim(adjustl(strain_chr_nam))//&
+              '% 2>/dev/null')
+          if( status .ne. 0) then
+            write(*,*) 'file '//trim(adjustl(strain_chr_nam))//&
+              '% not created'
+          endif
+
+          enddo
 
           goto 99
         elseif( strain_chs .eq. 2) then

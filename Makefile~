@@ -13,7 +13,7 @@ LDLIBS= -lreadline
 getiv2dat_obj= getiv2dat.o
 crt4run_sh_obj= crt4run_sh.o jsu_readline.o FCreadline.o 
 crtfil4tbt_obj= crtfil4tbt.o jsu_readline.o FCreadline.o
-lmpdum2pos_obj= lmpdum2pos.o jsu_readline.o FCreadline.o manual.o Lammps2fdf.o changeatnum.o
+lmpdum2pos_obj= lmpdum2pos.o jsu_readline.o FCreadline.o manual.o Lammps2fdf.o
 
 getiv2datf90: $(getiv2dat_obj)
 	$(FC) -o $@ $^

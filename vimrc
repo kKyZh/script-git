@@ -348,6 +348,26 @@ set backup
 nnoremap oo o<ESC>k
 nnoremap OO O<ESC>j
 
+" remap ctrl-h in normal mode with tmux
+" let g:tmux_navigator_no_mappings = 1
+" nnoremap <BS> <Nop>
+" nnoremap <silent> {Left-Mapping} :TmuxNavigateLeft<cr>
+" nnoremap <c-h> <nop>
+" nnoremap <c-h> <nop>
+" nnoremap <BS> <nop>
+nnoremap <c-h> <c-w><c-h>
+nnoremap <c-l> <c-w><c-l>
+nnoremap <c-j> <c-w><c-j>
+nnoremap <c-k> <c-w><c-k>
+
+nnoremap <c-w><c-h> :TmuxNavigateLeft<cr>
+nnoremap <c-w><c-l> :TmuxNavigateRight<cr>
+nnoremap <c-w><c-j> :TmuxNavigateDown<cr>
+nnoremap <c-w><c-k> :TmuxNavigateUp<cr>
+
+" disalbe backspace and ctrl-h in all normal, visual, select,
+" operator-pending, insert and command-line mode
+
 " set 256 color
 
 " highlight syntax
