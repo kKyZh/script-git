@@ -8,7 +8,7 @@
         implicit none
         
         integer num, num_data, renum
-        integer i, j, k, step, at, get_num, nx, ny, nz, format_co
+        integer i, j, k, m, step, at, get_num, nx, ny, nz, format_co
         integer numv, maxid, getdata_num,order, order_jump
         integer tempid
         integer check
@@ -139,142 +139,6 @@
         renum = 0
 49      continue
 
-        ! ############################## strain or not
-91      continue
-        write(*,*)
-        write(*,*) 'Do you need strain? (mkdir test)'
-        call userreadline( string, '(1. yes, 2. no) : ')
-        read( string, *, iostat=check) strain_chs
-        if( check .ne. 0) then
-          goto 91
-        elseif( strain_chs .eq. 1) then
-          write(*,*)
-          write(*,*) 'yes'
-199     continue
-          write(*,*)
-          write(*,*) 'lowest strain (%)'
-          call userreadline( string, '(integer)')
-          read( string, *, iostat=check) strain_lo
-          if( check .ne. 0) goto 199
-          if( strain_lo .lt. 0) goto 199
-          !only positive value availiable this time
-198     continue
-          write(*,*)
-          write(*,*) 'highest strain (%)'
-          call userreadline( string, '(integer)')
-          read( string, *, iostat=check) strain_hi
-          if( check .ne. 0) goto 198
-          if( strain_hi .lt. strain_lo) goto 198
-          if( (strain_hi / 100) .ge. 10) then
-            ! 100 + strain_hi
-            len_int_strain_nam = len_trim(adjustl(string)) - 2 + 1
-          elseif((strain_hi/100).ge.9 .and. (strain_hi/100).lt.10) then
-            len_int_strain_nam = 3
-            ! specific 900 + 100 = 1000 include .
-          else
-            len_int_strain_nam = 2
-          endif
-          if( strain_hi .eq. strain_lo) then
-            strain_in = 1
-            string = '1'
-            goto  196
-          endif
-197     continue
-          write(*,*)
-          write(*,*) 'interval (%)'
-          call userreadline( string, '(real)')
-          read( string, *, iostat=check) strain_in
-          if( check .ne. 0) goto 197
-          if( strain_in .gt. (strain_hi - strain_lo)) goto 197
-          ! find remainder manually, amod, dmod, mod not work well
-           real_check =( int(strain_hi - strain_lo) - &
-           (( int((strain_hi - strain_lo) / strain_in)) * strain_in))
-          ! find remainder manually, amod, dmod, mod not work well
-          !write(*,*) real_check
-          if( real_check .ne. 0) goto 197
-          ! find length of fraction part, if len < 0 -> = 0
-196     continue
-          ! strain_lo = strain_hi
-          len_strain_nam = len_trim(adjustl(string))
-          write( strain_chr_in, '(f0.0)') strain_in
-          len_fra_strain_nam = len_strain_nam - &
-          len_trim(adjustl(strain_chr_in))
-          if( len_fra_strain_nam .lt. 0) then
-            len_fra_strain_nam = 0
-          endif
-          len_fra_percent = len_fra_strain_nam
-          len_fra_strain_nam = len_fra_strain_nam + 2
-          len_strain_nam = len_int_strain_nam + len_fra_strain_nam
-          if( strain_lo .eq. strain_hi) then
-            num_fil = 1
-          else
-            num_fil =  (strain_hi - strain_lo) / strain_in
-          endif
-          write(*,*) num_fil
-          ! find length of fraction part, if len < 0 -> = 0
-          
-          do strain_i = strain_lo, strain_hi, strain_in
-          strain_nam = (100 + strain_i) / 100.0
-          write(strain_chr_nam, &
-            '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
-          write(*,'(2a)') trim(adjustl(strain_chr_nam)), '#'
-          if( len_fra_percent .eq. 0) then
-          write(*,'(1x, i0, a)') &
-            int(strain_i), '%'
-          else
-          write(*,'(1x, f<len_strain_nam>.<len_fra_percent>,a)') &
-            strain_i, '%'
-          endif
-          !write(strain_chr_nam, '(i0)') i
-          status = system( &
-            'mkdir strain_'&
-            !//trim(adjustl(strain_chr_chs))//'%')
-            //trim(adjustl(strain_chr_nam))//&
-              ' 2>/dev/null')
-          if( status .ne. 0) then
-            write(*,*) 'file '//trim(adjustl(strain_chr_nam))//&
-              ' not created'
-          endif
-          !strain_nam = (strain_hi - strain_lo) + 100) / 100
-          !len_strain_nam = size( strain_nam)
-          !len_fra_strain_nam = &
-          !  len_strain_nam - sizeof(int( strain_nam)) - 1
-          !write( strain_nam, '(f<len_strain_nam>.)') strain_chr_nam
-          !write( strain_chr_nam, *) strain_i
-          !len_fra_strain_nam = sizeof( fraction(strain_nam))
-          !write(*, '(f<len_strain_nam>.<len_fra_strain_nam>)') &
-          !  strain_nam
-          enddo
-
-          ! real can not add leading 0 but integer can
-          ! do tricks from character for leading 0 real format
-          ! real no blank leading spaces 
-
-
-
-
-
-
-
-
-
-
-          goto 99
-        elseif( strain_chs .eq. 2) then
-          write(*,*)
-          write(*,*) 'No'
-
-          goto 99
-        else
-          goto 99
-        endif
-
-        
-
-
-
-        ! ############################## strain or not finished
-
         write(*,*)
         write (*,'(1x,2a)')'Please input how many variables (integer)',&
           ' in one row?'
@@ -341,19 +205,167 @@
         elseif(vasp_out .ne. 1 .and. vasp_out .ne. 2) then
           goto 97
         endif
+        ! ##################### output POSCAR or not select finished
 
         open(10,file=filename, status='old',&
                 err=98, form='formatted', access='sequential')
         open(40,file='getdata.lammps', status='unknown', &
                 err=96, form='formatted', access='sequential') 
-        open(50,file='position.fdf', status='unknown', &
+        ! #################### dump.GNR & getdata.lammps here
+        ! #################### position.fdf and POSCAR are later
+
+        ! ############################## strain or not
+91      continue
+        write(*,*)
+        write(*,'(3a)') 'Do you need strain?', &
+          '(position.fdf -> position_*.fdf) (* strain without %)', &
+          '(POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)'
+        call userreadline( string, '(1. yes, 2. no) : ')
+        read( string, *, iostat=check) strain_chs
+        if( check .ne. 0) then
+          goto 91
+        elseif( strain_chs .eq. 1) then
+          write(*,*)
+          write(*,*) '1. yes, with strain'
+199     continue
+          write(*,*)
+          write(*,*) 'Lowest strain (with %)'
+          call userreadline( string, '(Integer) : ')
+          read( string, *, iostat=check) strain_lo
+          if( check .ne. 0) goto 199
+          if( strain_lo .lt. 0) goto 199
+          !only positive value availiable this time
+198     continue
+          write(*,*)
+          write(*,*) 'Highest strain (with %)'
+          call userreadline( string, '(Integer) : ')
+          read( string, *, iostat=check) strain_hi
+          if( check .ne. 0) goto 198
+          if( strain_hi .lt. strain_lo) goto 198
+          if( (strain_hi / 100) .ge. 10) then
+            ! 100 + strain_hi
+            len_int_strain_nam = len_trim(adjustl(string)) - 2 + 1
+          elseif((strain_hi/100).ge.9 .and. (strain_hi/100).lt.10) then
+            len_int_strain_nam = 3
+            ! specific 900 + 100 = 1000 include .
+          else
+            len_int_strain_nam = 2
+          endif
+          if( strain_hi .eq. strain_lo) then
+            strain_in = 1
+            string = '1'
+            goto  196
+          endif
+197     continue
+          write(*,*)
+          write(*,*) 'Interval (with %)'
+          call userreadline( string, '(Decimal or Integer) : ')
+          read( string, *, iostat=check) strain_in
+          if( check .ne. 0) goto 197
+          if( strain_in .gt. (strain_hi - strain_lo)) goto 197
+          ! find remainder manually, amod, dmod, mod not work well
+           real_check =( int(strain_hi - strain_lo) - &
+           (( int((strain_hi - strain_lo) / strain_in)) * strain_in))
+          ! find remainder manually, amod, dmod, mod not work well
+          !write(*,*) real_check
+          if( real_check .ne. 0) goto 197
+          ! find length of fraction part, if len < 0 -> = 0
+196     continue
+          ! strain_lo = strain_hi
+          len_strain_nam = len_trim(adjustl(string))
+          write( strain_chr_in, '(f0.0)') strain_in
+          len_fra_strain_nam = len_strain_nam - &
+          len_trim(adjustl(strain_chr_in))
+          if( len_fra_strain_nam .lt. 0) then
+            len_fra_strain_nam = 0
+          endif
+          len_fra_percent = len_fra_strain_nam
+          len_fra_strain_nam = len_fra_strain_nam + 2
+          len_strain_nam = len_int_strain_nam + len_fra_strain_nam
+          if( strain_lo .eq. strain_hi) then
+            num_fil = 1
+          else
+            num_fil = ((strain_hi - strain_lo) / strain_in) + 1
+          endif
+          write(*,*) num_fil
+          ! find length of fraction part, if len < 0 -> = 0
+          ! file include itself
+          
+          ! strain_lo to strain_hi, interval strain_in, 
+          ! i for number files
+          i = 0
+          do strain_i = strain_lo, strain_hi, strain_in
+          i = i + 1
+          strain_nam = (100 + strain_i) / 100.0
+          write(strain_chr_nam, &
+            '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
+          write(*,'(2a)') trim(adjustl(strain_chr_nam)), '#'
+          if( len_fra_percent .eq. 0) then
+          write(*,'(1x, i0, a)') &
+            int(strain_i), '%'
+          else
+          write(*,'(1x, f<len_strain_nam>.<len_fra_percent>,a)') &
+            strain_i, '%'
+          endif
+          status = system( &
+            'mkdir strain_'&
+            //trim(adjustl(strain_chr_nam))//&
+              ' 2>/dev/null')
+
+          ! just show new directory created or not
+          if( status .ne. 0) then
+            write(*,*) 'file '//trim(adjustl(strain_chr_nam))//&
+              ' not created'
+          endif
+
+          !############################## open write files
+          open(50000+i, &
+            file=&
+            'position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
+            status='unknown', &
+            err=95, form='formatted', access='sequential') 
+
+          if(vasp_out .eq. 1) then
+            open(80000+i, &
+              file=&
+              './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR',&
+              status='unknown', &
+              err=94, form='formatted', access='sequential') 
+          endif
+
+          enddo
+          !############################## open write files
+
+          ! real can not add leading 0 but integer can
+          ! do tricks from character for leading 0 real format
+          ! real no blank leading spaces 
+
+          ! ### no strain
+        elseif( strain_chs .eq. 2) then
+          write(*,*)
+          write(*,*) '2. No, without strain'
+          ! ### no strain -> only one file
+          i = 1
+        open(50000+i,file='position.fdf', status='unknown', &
                 err=95, form='formatted', access='sequential') 
 
         if(vasp_out .eq. 1) then
-        open(90,file='POSCAR', status='unknown', &
+        open(80000+i,file='POSCAR', status='unknown', &
           err=94, form='formatted', access='sequential')
         endif
-        ! ##################### output POSCAR or not select finished
+
+        strain_i = 0.0
+        strain_lo = 0.0
+        strain_hi = 0.0
+        strain_in = 0.0
+        num_fil = 1
+        strain_nam = (100 + strain_i) / 100.0
+
+        ! ### not strain or no strain
+        else
+          goto 91
+        endif
+        ! ############################## strain or not finished
 
         ! pre-read all num_data and step
         ! at present no need to obtain value of step
@@ -647,6 +659,7 @@
         ! add only alphabet ascii check? later
         read( string,*) vasp_ele(i)
         enddo
+        endif
 
         ! ############################## fix select
 93      continue
@@ -663,7 +676,6 @@
           write(*,'(1x, 2a)') &
             '(6) Fix lowest and highest dimer line;', &
             ' (this for strain and I-V later, fix along Z axis)'
-        endif
 
         call userreadline( string, '([1] -> [6]) : ')
         read( string, *, iostat=check) fix_type
@@ -727,31 +739,37 @@
           endselect
         endif
         ! ############################## fix select finished
+        endif
 
+        ! include strain or not strain with strain_nam as strain ratio
+        strain_i = strain_lo
+        do m = 1, num_fil
+        strain_nam = (100 + strain_i) / 100.0
         ! headpart of POSCAR
-        write(90,'(a)') 'POSCAR(VASP)_with_position(SIESTA)'
-        write(90,'(a)') '1.0'
+        if(vasp_out .eq. 1) then
+        write(80000+m,'(a)') 'POSCAR(VASP)_with_position(SIESTA)'
+        write(80000+m,'(a)') '1.0'
         real_zero = 0.000000
-        write(90, '(3(1x,f11.6))') &
-          cellx(getdata_num), real_zero, real_zero 
-        write(90, '(3(1x,f11.6))') &
-          real_zero, celly(getdata_num), real_zero 
-        write(90, '(3(1x,f11.6))') &
-          real_zero, real_zero, cellz(getdata_num)
-        write(90, '(<maxid>(1x, a5))') &
+        write(80000+m, '(3(1x,f11.6))') &
+          cellx(getdata_num)*strain_nam, real_zero, real_zero 
+        write(80000+m, '(3(1x,f11.6))') &
+          real_zero, celly(getdata_num)*strain_nam, real_zero 
+        write(80000+m, '(3(1x,f11.6))') &
+          real_zero, real_zero, cellz(getdata_num)*strain_nam
+        write(80000+m, '(<maxid>(1x, a5))') &
           (adjustr(vasp_ele(i)), i = 1, maxid)
-        write(90, '(<maxid>(1x, i5))') (num_ele(i), i = 1, maxid)
+        write(80000+m, '(<maxid>(1x, i5))') (num_ele(i), i = 1, maxid)
 
         if( format_co .eq. 1) then
-        write(90, '(a)') 'Direct'
+        write(80000+m, '(a)') 'Direct'
         elseif( format_co .eq. 2) then
-        write(90, '(a)') 'Cartesian'
+        write(80000+m, '(a)') 'Cartesian'
         endif
 
         endif
 
         ! headline of position.fdf
-        write(50,'(a)')'%block AtomicCoordinatesAndAtomicSpecies' 
+        write(50000+m,'(a)')'%block AtomicCoordinatesAndAtomicSpecies' 
 
         num_ele_low = 1
         num_ele_hi = 0
@@ -759,44 +777,54 @@
         num_ele_hi = num_ele_hi + num_ele(j)
         do i = num_ele_low, num_ele_hi
           ! position.fdf
-          write(50,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), id(i), name_ele(j)
+          write(50000+m,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, id(i), name_ele(j)
           ! POSCAR with relaxation all F F F
           if(vasp_out .eq. 1) then
             if( fix_type .ge. 3 .and. fix_type .le. 5) then
-          write(90,'(3(1x,f11.6),3(1x,a), 2a)') &
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), fix_x, fix_y, fix_z, &
+          write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
             elseif( fix_type .eq. 2) then
               if( j .eq. sele_fix) then
-          write(90,'(3(1x,f11.6),3(1x,a), 2a)') &
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), fix_x, fix_y, fix_z, &
+          write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
               else
-          write(90,'(3(1x,f11.6),2a)') &
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), ' F F F # ', trim(adjustl(vasp_ele(j)))
+          write(80000+m,'(3(1x,f11.6),2a)') &
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, &
+          ' F F F # ', trim(adjustl(vasp_ele(j)))
               endif
             elseif( fix_type .eq. 6) then
               if( posz2(i,getdata_num) .eq. hi_z &
                 .or. posz2(i, getdata_num) .eq. lo_z) then
-          write(90,'(3(1x,f11.6),3(1x,a), 2a)') &
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), fix_x, fix_y, fix_z, &
+          write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
               else
-          write(90,'(3(1x,f11.6),2a)') &
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), ' F F F # ', trim(adjustl(vasp_ele(j)))
+          write(80000+m,'(3(1x,f11.6),2a)') &
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, &
+          ' F F F # ', trim(adjustl(vasp_ele(j)))
               endif
 
             elseif( fix_type .eq. 1) then
-          write(90,'(3(1x,f11.6),2a)') &
-          posx2(i,getdata_num), posy2(i,getdata_num), &
-          posz2(i,getdata_num), ' F F F # ', trim(adjustl(vasp_ele(j)))
+          write(80000+m,'(3(1x,f11.6),2a)') &
+          posx2(i,getdata_num)*strain_nam, &
+          posy2(i,getdata_num)*strain_nam, &
+          posz2(i,getdata_num)*strain_nam, &
+          ' F F F # ', trim(adjustl(vasp_ele(j)))
             endif
           endif
           ! # is comment line in vasp and siesta
@@ -804,14 +832,34 @@
         num_ele_low = num_ele_low + num_ele(j)
         enddo
         ! endline of position fdf
-        write(50,'(a)')'%endblock AtomicCoordinatesAndAtomicSpecies' 
+        write(50000+m,'(a)') &
+          '%endblock AtomicCoordinatesAndAtomicSpecies' 
+
+        strain_i = strain_i + strain_in
+
+        if( vasp_out .eq. 1) then
+        rewind(80000+m)
+        close(80000+m)
+        endif
+        rewind(50000+m)
+        close(50000+m)
+        enddo
 
         write(*,*)
         write(*,*)'Outputing completed'
+
+        if( strain_chs .eq. 2) then
         write(*,*)'position.fdf created...'
         if(vasp_out .eq. 1) then
           write(*,*) 'POSCAR created...'
         endif
+        elseif( strain_chs .eq. 1) then
+        write(*,*)'position_*.fdf with strain created...'
+        if(vasp_out .eq. 1) then
+          write(*,*) './strain_*/POSCAR with strain created...'
+        endif
+        endif
+
         write(*,*)
         
         deallocate(id)
@@ -824,14 +872,8 @@
         deallocate(vasp_ele)
 
         rewind(40)
-        rewind(50)
         close(10)
         close(40)
-        close(50)
-        if( vasp_out .eq. 1) then
-        close(90)
-        rewind(90)
-        endif
 
         if( renum .eq. 1) then
           call changeatnum(renum)
