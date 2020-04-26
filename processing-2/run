@@ -1,0 +1,384 @@
+#!/bin/sh
+echo
+echo 'Create a directory and copy into it then submit the job to queue'
+echo '--version-1.8 //May/1st/2019//'
+echo
+echo 'The present working directory is: '
+echo `pwd`
+p_w_d=`pwd`
+echo
+echo 'You need to copy files to directories listed below'
+cd /work/boom9000/
+echo 'PWD is: '`pwd`
+ls -d */
+
+#--------------------------------------creat directory
+echo
+echo 'Do you want to creat a new directory?'
+echo 'Y for Yes, N for No, Q for Quit'
+while true; do
+read -e chs
+history -s "$chs"
+case $chs in
+	[yY]*)
+	echo
+      echo '-------------------------'
+	echo 'Please name the directory'
+	ls -d *
+
+	while true; do
+	read -e na_di
+  history -s "$na_di"
+
+	if [ -d "$na_di" ]; then
+#-----------------------------------------------------
+	#check directory is empty
+	if find "$na_di" -mindepth 1 -print -quit 2>/dev/null | grep -q . ; then
+#--------------------------------------------------
+
+	echo
+      echo 'Warning ==>'
+	echo 'Direcotry is exist but not empty, do you want to rename it?'
+	echo 'Y for Yes, N for No, Q for Quit'
+	while true; do 
+	read -e chs_2
+  history -s "$chs_2"
+		
+	case $chs_2 in
+	[yY]*)
+	echo
+      echo '-------------------------------------------------------'
+	echo 'Please enter a new name for rename "'$na_di'" directory'
+	while true; do
+	read -e na_di_2 
+  history -s "$na_di_2"
+	if [ -d "$na_di_2" ]; then
+	echo
+      echo 'Warning ==>'
+	echo 'Directory already exist! ==> Please enter another different name'
+	else
+	mv $na_di $na_di_2
+	echo
+      echo '--------------------------------------------'
+	echo '"'$na_di'" directory renamed by "'$na_di_2'"'
+      echo '--------------------------------------------'
+	break 4
+	fi
+	done
+#	break 3 just in case where we are
+	;;
+	[nN]*)
+	echo
+      echo '------------------------------------------'
+	echo 'Then, please enter a name of new directory'
+	while true; do
+	read -e na_di_2 
+  history -s "$na_di_2"
+	if [ -d "$na_di_2" ]; then
+	echo
+      echo 'Warning ==>'
+	echo 'Directory already exist! ==> Please enter another different name'
+	else
+	mkdir $na_di_2
+	echo
+      echo '------------------------------------'
+	echo 'A new directory "'$na_di_2'" created'
+      echo '------------------------------------'
+	break 4
+	fi
+	done
+	;;
+	[qQ]*)
+	echo
+	echo 'You quit the script, bye...'
+	echo
+	exit
+	;;
+	*)
+	echo
+	echo 'Please enter Y for Yes, N for No or Q for Quit'
+	echo
+	;;
+	esac
+#	break 4 just in case where we are
+
+	done
+
+#------------------------------------------------------	
+	else
+	echo
+      echo 'Warning ==>'
+	echo 'Directory is exist but empty, do you want to rename it?'
+	echo 'Y for Yes, N for No, Q for Quit'
+	while true; do 
+	read -e chs_2
+  history -s "$chs_2"
+		
+	case $chs_2 in
+	[yY]*)
+	echo
+      echo '---------------------------------------------'
+	echo 'Please enter a new name for rename "'$na_di'"'
+	while true; do
+	read -e na_di_2 
+  history -s "$na_di_2"
+	if [ -d "$na_di_2" ]; then
+	echo   
+      echo 'Warning ==>'
+	echo 'Directory already exist! ==> Please enter another different name'
+	else
+	mv $na_di $na_di_2
+	echo
+      echo '--------------------------------------------'
+	echo '"'$na_di'" directory renamed by "'$na_di_2'"'
+      echo '--------------------------------------------'
+	break 4
+	fi
+	done
+#	break 3 just in case where we are
+	;;
+	[nN]*)
+	echo
+      echo 'Warning ==>'
+	echo 'Then, do you want to creat a new directory?'
+	echo 'Y for Yes, N for No, Q for Quit'
+	while true; do 
+	read -e chs_3
+  history -s "$chs_3"
+	case $chs_3 in
+		[yY]*)
+		echo
+            echo '------------------------------------'
+		echo 'Please enter a name of new directory'
+		while true; do
+		read -e na_di_2 
+    history -s "$na_di_2"
+		if [ -d "$na_di_2" ]; then
+		echo
+            echo 'Warning ==>'
+		echo 'Directory already exist! ==> Please enter another different name'
+		else
+		mkdir $na_di_2
+		echo
+            echo '------------------------------------'
+		echo 'A new directory "'$na_di_2'" created' 
+            echo '------------------------------------'
+		break 5
+		fi
+		done
+		;;
+		[nN]*)
+		echo
+            echo '-----------------------------------------'
+		echo 'Then, please choose one directory to copy'
+            echo '-----------------------------------------'
+		break 5
+		;;
+		[qQ]*)
+		echo
+		echo 'You quit the script, bye...'
+		echo
+		exit
+		;;
+		*)
+		echo
+		echo 'Please enter Y for Yes, N for No or Q for Quit'
+		echo
+		;;
+	esac
+#	break 4 just in case where we are
+	done
+	;;
+
+	[qQ]*)
+	echo
+	echo 'You quit the script, bye...'
+	echo
+	exit
+	;;
+
+	*)
+	echo
+	echo 'Please enter Y for Yes, N for No or Q for Quit'
+	echo
+	;;
+
+	esac
+	done
+#-----------------------------------------------
+	fi
+#----------------------------------------------------------
+	else 
+	mkdir $na_di
+	echo
+      echo '----------------------------------'
+	echo 'A new directory created "'$na_di'"'
+      echo '----------------------------------'
+	fi
+	break 2
+	done
+	;;
+#----------------------------------------------------------
+	[nN]*)
+	echo
+      echo '-----------------------------------------'
+	echo 'Then, please choose one directory to copy'
+      echo '-----------------------------------------'
+	break 1
+	;;
+	[qQ]*)
+	echo
+	echo 'You quit the script, bye...'
+	echo
+	exit
+	;;
+	*)
+	echo
+	echo 'Please enter Y for Yes, N for No or Q for Quit'
+	echo
+	;;
+
+esac
+done
+
+#-------------------------------------------copy function
+echo
+echo '-----------------------------------------------------'
+echo '---------------- Copy Files -------------------------'
+echo 'Which directory you want to copy your input files to?'
+ls -d *
+while true; do
+read -e path_d
+history -s "$path_d"
+	if [ -d "$path_d" >/dev/null ]; then
+
+#-------------------------------------- check files again when copy
+	if find "$path_d" -mindepth 1 -print -quit 2>/dev/null | grep -q . ; then
+      echo
+      echo 'Warning ==>'
+	echo 'Checking... Directory is not empty, do you still want to copy?'
+	echo 'Y for Yes, N for No, Q for Quit'
+	while true; do 
+	read -e chs_4
+  history -s "$chs_4"
+	case $chs_4 in
+		[yY]*)
+            cd ./$path_d
+            echo
+            cp $p_w_d/* .
+            echo 'Copy finishied'
+            echo
+            ls 
+            echo '-----------------------------'
+		break 2
+		;;
+		[nN]*)
+		echo
+            echo '---------------------------------------------'
+		echo 'Then, please choose another directory to copy'
+            ls
+            echo
+            echo '---------------------------------------------'
+		break 1
+		;;
+		[qQ]*)
+		echo
+		echo 'You quit the script, bye...'
+		echo
+		exit
+		;;
+		*)
+		echo
+		echo 'Please enter Y for Yes, N for No or Q for Quit'
+		echo
+		;;
+	esac
+	done
+
+      #------------------ directory is empty or not
+      else
+      echo
+      echo '------------------------------------------'
+	echo 'Checking... Directory is empty, do copy...'
+      cd ./$path_d
+      echo
+      cp $p_w_d/* .
+      echo 'Copy finishied'
+      echo
+      ls 
+      echo '-----------------------------'
+      break 1
+      fi
+
+      #------------------ directory exist or not
+      else
+      echo
+      echo 'Warning ==>'
+      echo 'Directory is not exist, do you want to creat the directory and copy it?'
+	echo 'Y for Yes, N for No, Q for Quit'
+	while true; do 
+	read -e chs_5
+  history -s "$chs_5"
+	case $chs_5 in
+		[yY]*)
+            mkdir $path_d
+            echo
+            ll $path_d
+            cd ./$path_d
+            echo
+            cp $p_w_d/* .
+            echo 'Copy finishied'
+            echo
+            ls 
+            echo '-----------------------------'
+		break 2
+		;;
+		[nN]*)
+		echo
+            echo '---------------------------------------------'
+		echo 'Then, please choose another directory to copy'
+            ls
+            echo
+            echo '---------------------------------------------'
+		break 1
+		;;
+		[qQ]*)
+		echo
+		echo 'You quit the script, bye...'
+		echo
+		exit
+		;;
+		*)
+		echo
+		echo 'Please enter Y for Yes, N for No or Q for Quit'
+		echo
+		;;
+            esac
+      done
+      fi
+
+      #----------------------------- enter directory name loop done
+done
+
+echo
+echo '--------------'
+echo 'Submit the job'
+qsub run.sh
+echo
+echo '----------------------------------------'
+echo 'current directory for submitting the job'
+pwd
+echo '-------------------------'
+echo 'Back to working directory'
+cd $p_w_d
+pwd
+echo '-------------------------'
+echo
+echo '-------------------------------------------------------------------------'
+echo 'User boom9000 submitted task check'
+echo '-------------------------------------------------------------------------'
+qstat -u boom9000
+#statj ### commond not found
+echo
+echo '-------------------------------------------------------------------------'
+echo

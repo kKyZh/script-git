@@ -105,7 +105,7 @@
         write(*,*)
         write(*,*)'Please enter the minimum of Voltage in real.'
         write(*,*)'(min < 100 eV)'
-        call userreadline( char_emin, ' : ' )
+        all userreadline( char_emin, ' : ' )
         !read(*,*)char_emin
         read(char_emin,*,iostat=chk_emin)emin
         if(chk_emin/=0)then
@@ -137,7 +137,7 @@
         write(*,*)'Please enter the maximum of Voltage in real.'
         write(*,'(1x,a,f<totlen_emin>.<deci_emin>,a)')&
           '(',emin,' eV <= max < 100 eV)'
-        call userreadline( char_emax, ' : ' )
+        all userreadline( char_emax, ' : ' )
         !read(*,*)char_emax
         read(char_emax,*,iostat=chk_emax)emax
         if(chk_emax/=0)then
@@ -180,7 +180,7 @@
           rang,' eV'
           write(*,'(1x,a,f<totlen_rang>.<deci_rang>,a)')&
             '(0.0 eV < Interval < ',rang,' eV)'
-        call userreadline( char_intl, ' : ' )
+        all userreadline( char_intl, ' : ' )
         !read(*,*)char_intl
         read(char_intl,*,iostat=chk_intl)intl
         if(chk_intl/=0)then
