@@ -1,0 +1,679 @@
+#!/bin/bash
+
+echo
+echo 'Run qdel for all submitted jobs (User)'
+echo '--version-1.21 //Mar/1/2020//'
+echo
+
+echo "Which queue type do you want to choose?"
+while true; do
+  echo "(1) CPU-P_016; (2) GPU-C_002; (3) CPU-by_name; (4) GPU-by_name; (5) CPU-long_name; (6) GPU-long_name; (Q) QUIT;"
+echo
+read -p "==>  " -e chs_slt
+#history -s "$chs_slt" 2>/dev/null
+# do not use here for choose the jobname by up down arrow
+
+case $chs_slt in
+  1)
+    echo
+    echo "You choose (1) CPU-P_016;"
+    echo
+    break 1
+    ;;
+  2)
+    echo
+    echo "You choose (2) GPU-C_002;"
+    echo
+    break 1
+    ;;
+  3)
+    echo
+    echo "You choose (3) CPU-by_name;"
+    echo
+    break 1
+    ;;
+  4)
+    echo
+    echo "You choose (4) GPU-by_name;"
+    echo
+    break 1
+    ;;
+  5)
+    echo
+    echo "You choose (5) CPU-long_name;"
+    echo
+    break 1
+    ;;
+  6)
+    echo
+    echo "You choose (6) GPU-long_name;"
+    echo
+    break 1
+    ;;
+  [qQ]*)
+    echo
+    echo "You choose quit... bye"
+    echo
+    exit
+    ;;
+  *)
+    echo
+    echo "Error : Please choose (1) - (6) or quit"
+    echo
+esac
+done
+
+########## read all run_ files
+if [[ $chs_slt -eq 1 ]]; then
+
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+  tot_task=($(qstat -u boom9000 | awk '{ printf "%s\t", substr($1,1,length($1)-4); }'))
+  nu_task=$((${#tot_task[@]} - 2))
+  index_task=$((${#tot_task[@]}))
+  # space removed, sdb removed, R remain, ---- remain
+  # first two line for nu_task is dummy
+  echo
+
+  echo '------------------------------'
+  echo 'Task indeces :'
+  echo
+
+  for (( i=2; i<$index_task; i++ ))
+  do
+  echo -n ${tot_task[i]}' '
+  done
+  echo
+
+  echo
+  echo 'Total tasks : '$nu_task
+  echo
+  echo '------------------------------'
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Stopping jobs..'
+  echo
+
+  for (( i=2; i<$index_task; i++ ))
+    # excluded the first dummy R and ---
+  do
+    nu_subtask=$((i-1))
+    qdel ${tot_task[i]}
+    echo 'Task terminated # : '$nu_subtask' ==> qdel '${tot_task[i]}
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+##################################################
+elif [[ $chs_slt -eq 2 ]]; then
+
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+  tot_task=($(qstat -u boom9000 | awk '{ printf "%s\t", substr($1,1,length($1)-5); }'))
+  nu_task=$((${#tot_task[@]} - 1))
+  index_task=$((${#tot_task[@]}))
+  # space removed, sdb removed, R remain, ---- remain
+  # first two line for nu_task is dummy
+  echo
+
+  echo '------------------------------'
+  echo 'Task indeces :'
+  echo
+
+  for (( i=1; i<$index_task; i++ ))
+  do
+  echo -n ${tot_task[i]}' '
+  done
+  echo
+
+  echo
+  echo 'Total tasks : '$nu_task
+  # exclude the first -----
+  echo
+  echo '------------------------------'
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Stopping jobs..'
+  echo
+
+  for (( i=1; i<$index_task; i++ ))
+  # exclude the first -----
+  do
+    nu_subtask=$((i))
+    qdel ${tot_task[i]}
+    echo 'Task terminated # : '$nu_subtask' ==> qdel '${tot_task[i]}
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+##################################################
+elif [[ $chs_slt -eq 3 ]]; then
+
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+  tot_task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-4); }'))
+  jobname=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $4}'))
+  nu_task=$((${#tot_task_name[@]}))
+  review_nu_jobname=0
+
+  echo "Which group of jobname do you want to review and terminate ? "
+  echo "(May repetitive, from 1st job to last job)"
+  # try find simpler way to eliminate repetitive result
+  echo
+  for (( i=0; i<$nu_task; i++ ))
+    do
+
+      # display different jobname groups (may repetitive from 1st to end in queue)
+      if [[ $i -eq 0 ]]; then
+      display_read_jobname=${jobname[i]}
+      read_jobname=${jobname[i]}
+      echo $display_read_jobname
+      history -s "$read_jobname" 2>/dev/null
+      fi
+
+      if [[ "$display_read_jobname" != "${jobname[i]}" ]]; then
+        display_read_jobname=${jobname[i]}
+        read_jobname=${jobname[i]}
+        echo $display_read_jobname
+        history -s "$read_jobname" 2>/dev/null
+      fi
+
+    done
+
+  echo
+  echo "Please enter exact jobname for reviewing and deleting : "
+  echo "(Command history saved : up & down arrow to check saved jobname)"
+  read -p "==>  " -e read_jobname
+  history -s "$read_jobname"
+  echo
+
+  echo '=================================================='
+  echo 'Jobname reviewing :'
+  echo '--------------------------------------------------'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+      review_nu_jobname=$(($review_nu_jobname + 1))
+      qstat -u boom9000 ${tot_task_name[i]} | awk '{if (NR == 6) print}'
+    fi
+  done
+
+  if [[ $review_nu_jobname -eq 0 ]]; then
+    echo "No jobname consilient ... "
+  fi
+
+  echo '--------------------------------------------------'
+  echo
+  echo 'Total tasks : '$review_nu_jobname
+  echo
+  echo '=================================================='
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Stopping jobs..'
+  echo
+
+  nu_subtask=0
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+    nu_subtask=$(($nu_subtask + 1))
+    qdel ${tot_task_name[i]}
+    echo 'Task terminated # : '$nu_subtask' ==> qdel '${tot_task_name[i]}
+    fi
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+##################################################
+elif [[ $chs_slt -eq 4 ]]; then
+
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+  tot_task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-5); }'))
+  jobname=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $4}'))
+  nu_task=$((${#tot_task_name[@]}))
+  review_nu_jobname=0
+
+  echo "Which group of jobname do you want to review and terminate ? "
+  echo "(May repetitive, from 1st job to last job)"
+  # try find simpler way to eliminate repetitive result
+  echo
+  for (( i=0; i<$nu_task; i++ ))
+    do
+
+      # display different jobname groups (may repetitive from 1st to end in queue)
+      if [[ $i -eq 0 ]]; then
+      display_read_jobname=${jobname[i]}
+      read_jobname=${jobname[i]}
+      echo $display_read_jobname
+      history -s "$read_jobname" 2>/dev/null
+      fi
+
+      if [[ "$display_read_jobname" != "${jobname[i]}" ]]; then
+        display_read_jobname=${jobname[i]}
+        read_jobname=${jobname[i]}
+        echo $display_read_jobname
+        history -s "$read_jobname" 2>/dev/null
+      fi
+
+    done
+
+  echo
+  echo "Please enter exact jobname for reviewing and deleting : "
+  echo "(Command history saved : up & down arrow to check saved jobname)"
+  read -p "==>  " -e read_jobname
+  history -s "$read_jobname"
+  echo
+
+  echo '=================================================='
+  echo 'Jobname reviewing :'
+  echo '--------------------------------------------------'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+      review_nu_jobname=$(($review_nu_jobname + 1))
+      qstat -u boom9000 ${tot_task_name[i]} | awk '{if (NR == 6) print}'
+    fi
+  done
+
+  if [[ $review_nu_jobname -eq 0 ]]; then
+    echo "No jobname consilient ... "
+  fi
+
+  echo '--------------------------------------------------'
+  echo
+  echo 'Total tasks : '$review_nu_jobname
+  echo
+  echo '=================================================='
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Stopping jobs..'
+  echo
+
+  nu_subtask=0
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+    nu_subtask=$(($nu_subtask + 1))
+    qdel ${tot_task_name[i]}
+    echo 'Task terminated # : '$nu_subtask' ==> qdel '${tot_task_name[i]}
+    fi
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+##################################################
+elif [[ $chs_slt -eq 5 ]]; then
+
+  echo '------------------------------'
+  echo
+  #qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+  # qstat to print all jobname
+  user_check=($(qstat | awk '{ if (NR > 2) printf "%s\t", $3}'))
+  tot_task_name=($(qstat | awk '{ if (NR > 2) printf "%s\t", substr($1,1,length($1)-4); }'))
+  jobname=($(qstat | awk '{ if (NR > 2) printf "%s\t", $2}'))
+  nu_task=$((${#tot_task_name[@]}))
+  review_nu_jobname=0
+
+  echo "Which group of jobname do you want to review and terminate ? "
+  echo "(May repetitive, from 1st job to last job)"
+  # try find simpler way to eliminate repetitive result
+  echo
+
+  for (( i=0; i<$nu_task; i++ ))
+    do
+
+      # display different jobname groups (may repetitive from 1st to end in queue)
+      if [[ "${user_check[i]}" == "boom9000" ]]; then
+      if [[ $i -eq 0 ]]; then
+      display_read_jobname=${jobname[i]}
+      read_jobname=${jobname[i]}
+      echo $display_read_jobname
+      history -s "$read_jobname" 2>/dev/null
+      fi
+
+      if [[ "$display_read_jobname" != "${jobname[i]}" ]]; then
+        display_read_jobname=${jobname[i]}
+        read_jobname=${jobname[i]}
+        echo $display_read_jobname
+        history -s "$read_jobname" 2>/dev/null
+      fi
+      fi
+
+    done
+
+  echo
+  echo "Please enter exact jobname for reviewing and deleting : "
+  echo "(Command history saved : up & down arrow to check saved jobname)"
+  read -p "==>  " -e read_jobname
+  history -s "$read_jobname"
+  echo
+
+  echo '=================================================='
+  echo 'Jobname reviewing :'
+  echo '--------------------------------------------------'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${user_check[i]}" == "boom9000" ]]; then
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+      review_nu_jobname=$(($review_nu_jobname + 1))
+      qstat ${tot_task_name[i]} | awk '{if (NR == 3) print}'
+    fi
+    fi
+  done
+
+  if [[ $review_nu_jobname -eq 0 ]]; then
+    echo "No jobname consilient ... "
+  fi
+
+  echo '--------------------------------------------------'
+  echo
+  echo 'Total tasks : '$review_nu_jobname
+  echo
+  echo '=================================================='
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Stopping jobs..'
+  echo
+
+  nu_subtask=0
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+    nu_subtask=$(($nu_subtask + 1))
+    qdel ${tot_task_name[i]}
+    echo 'Task terminated # : '$nu_subtask' ==> qdel '${tot_task_name[i]}
+    fi
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+##################################################
+elif [[ $chs_slt -eq 6 ]]; then
+
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+  user_check=($(qstat | awk '{ if (NR > 2) printf "%s\t", $3}'))
+  tot_task_name=($(qstat | awk '{ if (NR > 2) printf "%s\t", substr($1,1,length($1)-5); }'))
+  jobname=($(qstat | awk '{ if (NR > 2) printf "%s\t", $2}'))
+  nu_task=$((${#tot_task_name[@]}))
+  review_nu_jobname=0
+
+  echo "Which group of jobname do you want to review and terminate ? "
+  echo "(May repetitive, from 1st job to last job)"
+  # try find simpler way to eliminate repetitive result
+  echo
+  for (( i=0; i<$nu_task; i++ ))
+    do
+
+      # display different jobname groups (may repetitive from 1st to end in queue)
+      if [[ "${user_check[i]}" == "boom9000" ]]; then
+      if [[ $i -eq 0 ]]; then
+      display_read_jobname=${jobname[i]}
+      read_jobname=${jobname[i]}
+      echo $display_read_jobname
+      history -s "$read_jobname" 2>/dev/null
+      fi
+
+      if [[ "$display_read_jobname" != "${jobname[i]}" ]]; then
+        display_read_jobname=${jobname[i]}
+        read_jobname=${jobname[i]}
+        echo $display_read_jobname
+        history -s "$read_jobname" 2>/dev/null
+      fi
+      fi
+
+    done
+
+  echo
+  echo "Please enter exact jobname for reviewing and deleting : "
+  echo "(Command history saved : up & down arrow to check saved jobname)"
+  read -p "==>  " -e read_jobname
+  history -s "$read_jobname"
+  echo
+
+  echo '=================================================='
+  echo 'Jobname reviewing :'
+  echo '--------------------------------------------------'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${user_check[i]}" == "boom9000" ]]; then
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+      review_nu_jobname=$(($review_nu_jobname + 1))
+      qstat ${tot_task_name[i]} | awk '{if (NR == 3) print}'
+    fi
+    fi
+  done
+
+  if [[ $review_nu_jobname -eq 0 ]]; then
+    echo "No jobname consilient ... "
+  fi
+
+  echo '--------------------------------------------------'
+  echo
+  echo 'Total tasks : '$review_nu_jobname
+  echo
+  echo '=================================================='
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Stopping jobs..'
+  echo
+
+  nu_subtask=0
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${jobname[i]}" == "$read_jobname" ]]; then
+    nu_subtask=$(($nu_subtask + 1))
+    qdel ${tot_task_name[i]}
+    echo 'Task terminated # : '$nu_subtask' ==> qdel '${tot_task_name[i]}
+    fi
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo '------------------------------'
+  echo
+
+fi

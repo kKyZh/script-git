@@ -1,0 +1,16 @@
+all: test
+
+test.o: test_f.o
+	ifort -c test.f90
+
+test_f.o:
+	ifort -c test_f.f90
+
+test_c.o:
+	icc -c test_c.c
+
+test: test.o test_f.o test_c.o
+	ifort -o test test.o test_f.o test_c.o -lreadline
+
+clean:
+	rm -f *.mod *.o test

@@ -1,0 +1,257 @@
+#!/bin/bash
+
+echo
+echo 'Run multi- qsub jobs by range (tbtrans)'
+echo '--version-1.0 //Feb/27/2020//'
+echo
+
+echo "Which queue type do you want to choose?"
+while true; do
+  echo "(1) CPU-P_016; (2) GPU-C_002; (3) CPU-ADDED; (Q) QUIT;"
+echo
+read -p "==>  " -e chs_slt
+history -s "$chs_slt" 2>/dev/null
+
+case $chs_slt in
+  1)
+    echo
+    echo "You choose (1) CPU-P_016;"
+    echo
+    break 1
+    ;;
+  2)
+    echo
+    echo "You choose (2) GPU-C_002;"
+    echo
+    break 1
+    ;;
+  3)
+    echo
+    echo "You choose (3) CPU-ADDED;"
+    echo
+    break 1
+    ;;
+  [qQ]*)
+    echo
+    echo "You choose quit... bye"
+    echo
+    exit
+    ;;
+  *)
+    echo
+    echo "Error : Please choose (1) or (2) or quit"
+    echo
+esac
+done
+
+########## read all run_ files
+if [[ $chs_slt -eq 1 ]]; then
+
+  echo '------------------------------'
+  echo 'ls run_*.sh run.sh'
+  echo
+  ls run_*.sh run.sh
+  echo
+  echo '------------------------------'
+  echo
+
+  echo
+  tot_fil=($(find . -maxdepth 1 -type f \( -name "run_*.sh" -o -name "run.sh" \) -printf '%f\t'; echo))
+  nu_fil=${#tot_fil[@]}
+  # echo newline, \t is tab the last variable can not give a newline
+  # find file name print %f removed leading directories \n newline
+  # -o is or operator \( \) maybe a new line of command and include in one
+
+  echo '------------------------------'
+  echo 'Run files submitted'
+  echo
+  echo ${tot_fil[@]}
+  echo
+  echo 'Total files for submitting : '$nu_fil
+  echo
+  echo '------------------------------'
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Submitting jobs..'
+  echo
+
+  for (( i=0; i<$nu_fil; i++ ))
+  do
+    nu_subtask=$((i+1))
+    echo -n "Task submitted # : "$nu_subtask" ==> "
+    # -n no new line
+    qsub ${tot_fil[i]}
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo 'Submitted jobs : '$nu_fil
+  echo
+  echo '------------------------------'
+  echo
+
+elif [[ $chs_slt -eq 2 ]]; then
+
+  echo '------------------------------'
+  echo 'ls run-gpu_*.sh run-gpu.sh'
+  echo
+  ls run-gpu_*.sh run-gpu.sh
+  echo
+  echo '------------------------------'
+  echo
+
+  tot_fil=($(find . -type f \( -name "run-gpu_*.sh" -o -name "run-gpu.sh" \) -printf '%f\t'; echo))
+  nu_fil=${#tot_fil[@]}
+  # echo newline, \t is tab the last variable can not give a newline
+  # find file name print %f removed leading directories \n newline
+  # -o is or operator \( \) maybe a new line of command and include in one
+
+  echo '------------------------------'
+  echo 'Run files submitted'
+  echo
+  echo ${tot_fil[@]}
+  echo
+  echo 'Total files for submitting : '$nu_fil
+  echo
+  echo '------------------------------'
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Submitting jobs..'
+  echo
+
+  for (( i=0; i<$nu_fil; i++ ))
+  do
+    nu_subtask=$((i+1))
+    echo -n "Task submitted # : "$nu_subtask" ==> "
+    # -n no new line
+    qsub ${tot_fil[i]}
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo 'Submitted jobs : '$nu_fil
+  echo
+  echo '------------------------------'
+  echo
+
+elif [[ $chs_slt -eq 3 ]]; then
+
+  echo '------------------------------'
+  echo 'ls run_added_*.sh run_added.sh'
+  echo
+  ls run_added_*.sh run_added.sh
+  echo
+  echo '------------------------------'
+  echo
+
+  echo
+  tot_fil=($(find . -maxdepth 1 -type f \( -name "run_added_*.sh" -o -name "run_added.sh" \) -printf '%f\t'; echo))
+  nu_fil=${#tot_fil[@]}
+  # echo newline, \t is tab the last variable can not give a newline
+  # find file name print %f removed leading directories \n newline
+  # -o is or operator \( \) maybe a new line of command and include in one
+
+  echo '------------------------------'
+  echo 'Run files submitted'
+  echo
+  echo ${tot_fil[@]}
+  echo
+  echo 'Total files for submitting : '$nu_fil
+  echo
+  echo '------------------------------'
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Submitting jobs..'
+  echo
+
+  for (( i=0; i<$nu_fil; i++ ))
+  do
+    nu_subtask=$((i+1))
+    echo -n "Task submitted # : "$nu_subtask" ==> "
+    # -n no new line
+    qsub ${tot_fil[i]}
+  done
+
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo 'Submitted jobs : '$nu_fil
+  echo
+  echo '------------------------------'
+  echo
+
+fi

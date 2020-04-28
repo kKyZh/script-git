@@ -1,0 +1,202 @@
+#!/bin/sh
+echo
+echo 'Script for creating run.sh (Version-1.2)'
+echo '(Include crt4run_shf90 program)'
+echo
+echo 'Checking .fdf file...'
+nu_fil2=`ls -f *.fdf 2>/dev/null | wc -l` #hide the error of no .car file
+
+#-------------------------------------------------------------------
+	if [[ $nu_fil2 -eq 0 ]]; then
+	echo
+	echo "There is no .fdf file, please check again and go to create one, bye..."
+	echo
+	exit
+
+#-------------------------------------------------------------------
+	elif [[ $nu_fil2 -eq 1 ]]; then
+	echo
+	echo "You have only one .fdf file"
+	echo 
+	ls *.fdf
+	echo
+	echo "Do you want to use it for creating run.sh? (Y for Yes, N for No)"
+	while true; do
+	read choose3
+	case $choose3 in
+	[Nn]*)
+	echo
+	echo "See you then, bye..."
+	echo
+	exit
+	;;
+	[Yy]*)
+	filename1=*.fdf
+	filename_1="${filename1//.fdf}" # delet .fdf
+	crt4run_shf90 $filename_1
+	echo
+	echo "Run crt4run_shf90 for creating run.sh by "$filename1
+	echo
+	break 1
+	;;
+	*)
+	echo
+	echo "Please choose Y for Yes, N for No"
+	esac
+	done
+
+#-------------------------------------------------------------------
+	elif [[ $nu_fil2 -gt 1 ]]; then
+
+    echo
+    echo 'Please choose the type of aprun for run.sh'
+    echo '(1) SIESTA;  (2) TranSIESTA; (Q) "Quit";'
+    while true; do
+      read chs_type
+      case $chs_type in
+        1)
+          echo
+          echo 'You choose (1) SIESTA;'
+          break 1
+          ;;
+        2)
+          echo
+          echo 'You choose (2) TranSIESTA;'
+          break 1
+          ;;
+        [Qq]*)
+          echo
+          echo 'You chosse "Quit", bye!'
+          echo
+          exit
+          ;;
+        *)
+          echo
+          echo 'Please choose the type of aprun for run.sh'
+          echo '(1) SIESTA;  (2) TranSIESTA; (Q) "Quit";'
+      esac
+    done
+    # ------------------------------- (1) SIESTA
+if [[ $chs_type -eq 1 ]]; then
+
+	echo
+	echo 'Please choose one .fdf file for creating run.sh'
+	echo
+	ls -f *.fdf
+	echo
+	echo "Please input one of above files:"	
+
+	while true; do
+	read -e filename1
+  if [ -z "$filename1" ]
+    # -z can check variable is empty or not, -e can read the same type from command line
+  then
+	echo
+	ls *.fdf
+	echo
+    echo "Please input the correct existed file"
+  else
+
+	if [ ! -f $filename1 ]; then
+	echo
+	ls *.fdf
+	echo
+	echo "Please input the correct existed file"
+	
+	else
+	echo
+	echo 'You choose: '$filename1
+	echo
+	filename_1="${filename1//.fdf}" # delet .fdf
+	crt4run_shf90 $filename_1
+	break 1
+	fi
+  fi
+	done
+
+    # ------------------------------- (2) tranSIESTA
+  elif [[ $chs_type -eq 2 ]]; then
+
+        # ----------------- first .fdf file
+	echo
+  echo '---------------- Information --------------------'
+	echo 'Please choose first .fdf file for creating run.sh'
+	echo
+	ls -f *.fdf
+	echo
+	echo "Please input one of above files:"	
+
+	while true; do
+	read -e filename1
+  if [ -z "$filename1" ]
+    # -z can check variable is empty or not, -e can read the same type from command line
+  then
+	echo
+	ls *.fdf
+	echo
+    echo "Please input the correct existed file"
+  else
+
+	if [ ! -f $filename1 ]; then
+	echo
+	ls *.fdf
+	echo
+	echo "Please input the correct existed file"
+	
+	else
+	echo
+	echo 'You choose the first: '$filename1
+	echo
+	filename_1="${filename1//.fdf}" # delet .fdf
+	break 1
+	fi
+  fi
+	done
+
+        # ----------------- second .fdf file
+	echo
+  echo '---------------- Information --------------------'
+	echo 'Please choose second .fdf file for creating run.sh'
+	echo
+	ls -f *.fdf
+	echo
+	echo "Please input one of above files:"	
+
+	while true; do
+	read -e filename2
+  if [ -z "$filename2" ]
+    # -z can check variable is empty or not, -e can read the same type from command line
+  then
+	echo
+	ls *.fdf
+	echo
+    echo "Please input the correct existed file"
+  else
+
+	if [ ! -f $filename2 ]; then
+	echo
+	ls *.fdf
+	echo
+	echo "Please input the correct existed file"
+
+  elif [ $filename2 = $filename1 ]; then
+    echo
+    echo '-------------- Warning ----------------'
+    echo 'Please do not enter the same input file'
+	  echo
+	  ls -f *.fdf
+	  echo
+    echo 'Try again for the second .fdf file'
+	
+	else
+	echo
+	echo 'You choose the second: '$filename2
+	echo
+	filename_2="${filename2//.fdf}" # delet .fdf
+	crt4run_shf90 $filename_1 $filename_2
+	break 1
+	fi
+  fi
+	done
+fi
+fi
