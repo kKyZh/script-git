@@ -1,0 +1,398 @@
+#!/bin/bash
+
+# check running tasks in queue
+# check tasks containing similar portion
+
+echo
+echo 'Check running tasks in CPU and GPU'
+echo '--version-1.0 //Feb/26/2020//'
+echo
+
+echo "================================================================================"
+echo "Which one would you like to do?"
+echo
+
+while true; do
+echo "Check RUNNING tasks;"
+echo "(1) CPU; (2) GPU; (3) Total in CPU; (4) Total in GPU; (Q) QUIT;"
+echo "Check WAITING tasks;"
+echo "(11) CPU; (12) GPU; (13) Total in CPU; (14) Total in GPU;"
+echo "Check the amount of submitted tasks;"
+echo "(21) CPU; (22) GPU;"
+echo
+read -p "==>  " -e chs_slt
+history -s "$chs_slt" 2>/dev/null
+
+case $chs_slt in
+  1)
+    echo
+    echo "You choose (1)  Check running tasks in CPU;"
+    echo
+    break 1
+    ;;
+  2)
+    echo
+    echo "You choose (2)  Check running tasks in GPU;"
+    echo
+    break 1
+    ;;
+  3)
+    echo
+    echo "You choose (3)  Check TOTAL running tasks in CPU;"
+    echo
+    break 1
+    ;;
+  4)
+    echo
+    echo "You choose (4)  Check TOTAL running tasks in GPU;"
+    echo
+    break 1
+    ;;
+  [qQ]*)
+    echo
+    echo "You choose quit... bye"
+    echo
+    exit
+    ;;
+  21)
+    echo
+    echo "You choose (21)  Check amount of submitted tasks in CPU;"
+    echo
+    break 1
+    ;;
+  22)
+    echo
+    echo "You choose (22)  Check amount of submitted tasks in GPU;"
+    echo
+    break 1
+    ;;
+  11)
+    echo
+    echo "You choose (11)  Check waiting tasks in CPU;"
+    echo
+    break 1
+    ;;
+  12)
+    echo
+    echo "You choose (12)  Check waiting tasks in GPU;"
+    echo
+    break 1
+    ;;
+  13)
+    echo
+    echo "You choose (13)  Check TOTAL waiting tasks in CPU;"
+    echo
+    break 1
+    ;;
+  14)
+    echo
+    echo "You choose (14)  Check TOTAL waiting tasks in GPU;"
+    echo
+    break 1
+    ;;
+  *)
+    echo
+    echo "Error : Please choose correct number or quit"
+    echo
+esac
+done
+
+####################
+if [[ $chs_slt -eq 1 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-4); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -u boom9000 | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "R" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -u boom9000 ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total running tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 2 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-5); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -u boom9000 | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "R" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -u boom9000 ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total running tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 3 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-4); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -a | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "R" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -a ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total running tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 4 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-5); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -a | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "R" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -a ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total running tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 11 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-4); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -u boom9000 | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "Q" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -u boom9000 ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total waiting tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 12 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-5); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -u boom9000 | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "Q" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -u boom9000 ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total waiting tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 13 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-4); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -a | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "Q" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -a ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total waiting tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 14 ]]; then
+
+  echo "================================================================================"
+  task_state=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -a | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-5); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  # head print
+    qstat -a | awk '{if (NR < 6) print}'
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "Q" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    qstat -a ${task_name[i]} | awk '{if (NR == 6) print}'
+    
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total waiting tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 21 ]]; then
+
+  task_state=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-4); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "Q" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total submitted tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+####################
+elif [[ $chs_slt -eq 22 ]]; then
+
+  task_state=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", $10}'))
+  task_name=($(qstat -u boom9000 | awk '{ if (NR > 5) printf "%s\t", substr($1,1,length($1)-5); }'))
+
+  nu_task=$((${#task_state[@]}))
+  nu_task_run=0
+
+  for (( i=0; i<$nu_task; i++ ))
+  do
+    if [[ "${task_state[i]}" == "Q" ]]; then
+      nu_task_run=$(($nu_task_run + 1))
+
+    fi
+
+  done
+
+  echo "================================================================================"
+  echo
+  echo "Total submitted tasks : "$nu_task_run
+  echo
+  echo "================================================================================"
+  echo
+
+fi

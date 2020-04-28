@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# -2 color; new-seesion one new window; split-window, h vertical, v horizontal; select-pane -t panel number; split 3 and vertically even
+tmux -2 new-session \; split-window -v \; send-keys C-l \; select-pane -t 2 \; send-keys C-l \; split-window -v \;

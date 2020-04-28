@@ -1,0 +1,7 @@
+#!/bin/bash
+
+chmod 400 ~/.ssh/keys/cc/cc
+ssh -X front.cc.tohoku.ac.jp
+
+wait
+/usr/local/bin/super-off
