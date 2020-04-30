@@ -1,6 +1,6 @@
 .SUFFIXES: .f90 .c .o
 
-EXECS = crt4run_shf90 crtfil4tbtf90 getiv2datf90 lmpdum2posf90
+EXECS = vasp2fdff90 # crtfil4trasief90 crt4run_shf90 crtfil4tbtf90 getiv2datf90 lmpdum2posf90
 all: $(EXECS)
 
 FC=ifort
@@ -14,21 +14,29 @@ getiv2dat_obj= getiv2dat.o
 crt4run_sh_obj= crt4run_sh.o jsu_readline.o FCreadline.o 
 crtfil4tbt_obj= crtfil4tbt.o jsu_readline.o FCreadline.o
 lmpdum2pos_obj= lmpdum2pos.o jsu_readline.o FCreadline.o manual.o Lammps2fdf.o changeatnum.o
+crtfil4trasie_obj= crtfil4trasie.o jsu_readline.o FCreadline.o manual.o
+vasp2fdf_obj= vasp2fdf.o jsu_readline.o FCreadline.o strain_get.o
 
-getiv2datf90: $(getiv2dat_obj)
-	$(FC) -o $@ $^
+vasp2fdff90: $(vasp2fdf_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+crtfil4trasief90: $(crtfil4trasie_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
 crt4run_shf90: $(crt4run_sh_obj)
 	$(FC) -o $@ $^ $(LDLIBS)
 crtfil4tbtf90: $(crtfil4tbt_obj)
 	$(FC) -o $@ $^ $(LDLIBS)
 lmpdum2posf90: $(lmpdum2pos_obj)
 	$(FC) -o $@ $^ $(LDLIBS)
+getiv2datf90: $(getiv2dat_obj)
+	$(FC) -o $@ $^
 .f90.o:
 	$(FC) -c $<
 .c.o:
 	$(cc) -c $<
 
 jsu_readline.o: FCreadline.o
+vasp2fdf.o: jsu_readline.o strain_get.o
+crtfil4trasie.o: jsu_readline.o manual.o
 crt4run_sh.o: jsu_readline.o
 crtfil4tbt.o: jsu_readline.o
 lmpdum2pos.o: jsu_readline.o manual.o Lammps2fdf.o changeatnum.o

@@ -48,6 +48,17 @@ echo cp sumldos.f90 ../
 echo cp sumldos.f90 ../backup
 echo cp sumldos.f90 ~/script-git
 echo cp sumldosf90 ~/bin
+echo cp crtfil4trasie.f90 ../
+echo cp crtfil4trasie.f90 ../backup
+echo cp crtfil4trasie.f90 ~/script-git
+echo cp crtfil4trasief90 ~/bin
+echo cp strain_get.f90 ../
+echo cp strain_get.f90 ../backup
+echo cp strain_get.f90 ~/script-git
+echo cp vasp2fdf.f90 ../
+echo cp vasp2fdf.f90 ../backup
+echo cp vasp2fdf.f90 ~/script-git
+echo cp vasp2fdff90 ~/bin
 #echo cp qdel-multi ../
 #echo cp qdel-multi ../backup
 #echo cp qdel-multi ~/script-git
@@ -105,6 +116,17 @@ cp sumldos.f90 ../
 cp sumldos.f90 ../backup
 cp sumldos.f90 ~/script-git
 cp sumldosf90 ~/bin
+cp crtfil4trasie.f90 ../
+cp crtfil4trasie.f90 ../backup
+cp crtfil4trasie.f90 ~/script-git
+cp crtfil4trasief90 ~/bin
+cp strain_get.f90 ../
+cp strain_get.f90 ../backup
+cp strain_get.f90 ~/script-git
+cp vasp2fdf.f90 ../
+cp vasp2fdf.f90 ../backup
+cp vasp2fdf.f90 ~/script-git
+cp vasp2fdff90 ~/bin
 #cp qdel-multi ../
 #cp qdel-multi ../backup
 #cp qdel-multi ~/script-git

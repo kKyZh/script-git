@@ -480,7 +480,7 @@
 1011    continue
         write(*,*)
         write(*,'(1x,3a)')'Please input the element number of ',& 
-          trim(adjustl(lb_el(i))), ' (which in chemical table)'
+          trim(adjust(lb_el(i))), ' (which in chemical table)'
         call userreadline( string, '(Integer) : ')
         read( string, *, iostat=chk) nu_lb(i)
         if(chk/=0)then

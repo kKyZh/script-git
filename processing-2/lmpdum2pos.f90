@@ -218,8 +218,8 @@
 91      continue
         write(*,*)
         write(*,'(3a)') 'Do you need strain?', &
-          '(position.fdf -> position_*.fdf) (* strain without %)', &
-          '(POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)'
+          ' (position.fdf -> position_*.fdf) (* strain without %)', &
+          ' (POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)'
         call userreadline( string, '(1. yes, 2. no) : ')
         read( string, *, iostat=check) strain_chs
         if( check .ne. 0) then
