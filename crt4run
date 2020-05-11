@@ -1,6 +1,6 @@
 #!/bin/sh
 echo
-echo 'Script for creating run.sh (Version-2.1//Feb/18/2020)'
+echo 'Script for creating run.sh (Version-2.1//May/10/2020)'
 echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
     echo
     echo 'Please choose the type of aprun for run.sh'
@@ -10,6 +10,7 @@ echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
     echo '(4) SIESTA (Individually);'
     echo '(5) TranSIESTA (Individually);'
     echo '(6) Denchar;'
+    echo '(7) VASP for GPU;'
     echo '(Q) "Quit";'
     while true; do
       read -p '==> ' -e chs_type
@@ -45,6 +46,11 @@ echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
           echo 'You choose(6) Denchar;'
           break 1
           ;;
+        7)
+          echo
+          echo 'You choose(7) VASP for GPU;'
+          break 1
+          ;;
         [Qq]*)
           echo
           echo 'You chosse "Quit", bye!'
@@ -60,6 +66,7 @@ echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
           echo '(4) SIESTA (Individually);'
           echo '(5) TranSIESTA (Individually);'
           echo '(6) Denchar;'
+          echo '(7) VASP for GPU;'
           echo '(Q) "Quit";'
       esac
     done
@@ -780,6 +787,52 @@ nu_fil2=`ls -f denchar.fdf 2>/dev/null | wc -l` #hide the error of no .car file
 	echo "Run crt4run_shf90 for creating run.sh by "$filename1
 	echo
 	crt4run_shf90 $chs_type $filename1 && qsub run.sh && qstat -u boom9000
+	echo
+	break 1
+	;;
+	*)
+	echo
+	echo "Please choose Y for Yes, N for No"
+	esac
+	done
+
+  fi
+
+############################## (6) denchar #################################
+  elif [[ $chs_type -eq 7 ]]; then
+#-------------------------------------------------------------------
+echo
+echo 'Checking ./strain_* directories ...'
+nu_dir=`ls -d ./strain_*/ 2>/dev/null | wc -l` #hide the error of no .car file
+
+	if [[ $nu_dir -eq 0 ]]; then
+	echo
+	echo "There is no strain_* directories, can't create run files for VASP-GPU, bye..."
+	echo
+	exit
+
+	elif [[ $nu_dir -gt 0 ]]; then
+	echo
+	echo "You have ./strain_* directories"
+	echo 
+	ls -d ./strain_*/
+	echo
+	echo "Do you want to use it for creating run.sh? (Y for Yes, N for No)"
+	while true; do
+    read -p '==>  ' -e choose3
+    history -s "$choose3"
+	case $choose3 in
+	[Nn]*)
+	echo
+	echo "See you then, bye..."
+	echo
+	exit
+	;;
+	[Yy]*)
+	echo
+	echo "Run crt4run_shf90 to create run_vasp_gpu_*.sh"
+	echo
+	crt4run_shf90 $chs_type
 	echo
 	break 1
 	;;

@@ -2,13 +2,12 @@
 
 echo
 echo 'Run multi- qsub jobs by range (tbtrans)'
-echo '--version-1.0 //Feb/27/2020//'
+echo '--version-1.0 //May/10/2020//'
 echo
 
 echo "Which queue type do you want to choose?"
 while true; do
-  echo "(1) CPU-P_016; (2) GPU-C_002; (3) CPU-ADDED; (Q) QUIT;"
-echo
+  echo "(1) CPU-P_016; (2) GPU-C_002; (3) CPU-ADDED; (4) GPU-VASP-strain; (Q) QUIT;"
 read -p "==>  " -e chs_slt
 history -s "$chs_slt" 2>/dev/null
 
@@ -28,6 +27,12 @@ case $chs_slt in
   3)
     echo
     echo "You choose (3) CPU-ADDED;"
+    echo
+    break 1
+    ;;
+  4)
+    echo
+    echo "You choose (4) GPU-VASP-strain;"
     echo
     break 1
     ;;
@@ -244,6 +249,85 @@ done
     qsub ${tot_fil[i]}
   done
 
+  echo
+  echo '------------------------------'
+  echo
+  qstat -u boom9000
+  echo
+  echo 'Submitted jobs : '$nu_fil
+  echo
+  echo '------------------------------'
+  echo
+
+  # ****************************** VASP for GPU with strain
+elif [[ $chs_slt -eq 4 ]]; then
+
+  echo '------------------------------'
+  echo 'list run_vasp_gpu_*.sh in ./strain_*/'
+  echo
+  ls -f ./strain_*/run_vasp_gpu_*.sh
+  echo
+  echo '------------------------------'
+  echo
+  echo
+  #tot_fil=($(find . -maxdepth 2 -type f -name "./strain_*/run-vasp-gpu_*.sh" -printf '%f\t'; echo))
+  tot_fil=($(find . -maxdepth 2 -name "run_vasp_gpu_*.sh" -printf '%f\t'; echo))
+  tot_dir=($(find . -maxdepth 1 -type d -name "strain_*" -printf '%f\t'; echo))
+  nu_fil=${#tot_fil[@]}
+  nu_dir=${#tot_dir[@]}
+  # echo newline, \t is tab the last variable can not give a newline
+  # find file name print %f removed leading directories \n newline
+  # -o is or operator \( \) maybe a new line of command and include in one
+
+  echo '------------------------------'
+  echo 'Run files submitted'
+  echo
+  echo 'Order of submit directories :'
+  echo ${tot_dir[@]}
+  echo
+  echo 'Order of submit files :'
+  echo ${tot_fil[@]}
+  echo
+  echo 'Total files for submitting : '$nu_fil
+  echo
+  echo '------------------------------'
+  
+  while true; do
+  echo
+  echo 'Are you sure to continue? (Y/N)'
+  read -p "==>  " -e chs_yn
+  history -s "$chs_yn"
+  case $chs_yn in
+    [yY]*)
+      echo
+      echo ' Yes, continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo ' No, bye...'
+      echo
+      exit
+      ;;
+    *)
+  esac
+done
+
+  echo '------------------------------'
+  echo 'Submitting jobs..'
+  echo
+  for (( i=0; i<$nu_fil; i++ ))
+  do
+    nu_subtask=$((i+1))
+    pushd ${tot_dir[i]} > /dev/null
+    echo $PWD" ==> "${tot_fil[i]}
+    echo -n "Task submitted # : "$nu_subtask" ==> "
+    # -n, no new line?
+    qsub ${tot_fil[i]}
+    echo
+    popd > /dev/null
+  done
   echo
   echo '------------------------------'
   echo

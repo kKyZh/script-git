@@ -73,6 +73,27 @@
         character(32) strain_chr_nam ! directory name strain percent
         character(32) strain_chr_in ! char for interval
         !----------------------------------
+        integer chk_fix
+        integer fix_species
+        integer dime_ly ! carbon dime layer
+        integer length_wide ! carbon 6-member-ring length wide part
+        integer num_wide ! wide carbon atoms number
+        integer num_narrow ! narrow carbon atoms number
+        real dist_dime_ly ! distance between two carbon atoms
+        real, allocatable :: x_pos(:,:,:)
+        integer, allocatable :: x_id(:)
+        integer, allocatable :: y_id(:)
+        character(len=:), allocatable :: x_name_ele(:)
+        real tmp_real
+        integer tmp_int
+        character(len=:), allocatable :: tmp_name_ele
+        integer re_num_wide
+        integer re_num_narrow
+        real z_narrow_lo
+        real z_narrow_hi
+        integer z_l
+        integer z_po_l
+        !----------------------------------
 
         write(*,*)
         write(*,'(1x,2a)') &
@@ -215,11 +236,14 @@
         ! #################### position.fdf and POSCAR are later
 
         ! ############################## strain or not
+        ! strain and fix one specie -> specific fix wide part
+        ! only narrow part strained
+        ! strain with each line
 91      continue
         write(*,*)
         write(*,'(3a)') 'Do you need strain?', &
-          '(position.fdf -> position_*.fdf) (* strain without %)', &
-          '(POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)'
+          ' (position.fdf -> position_*.fdf) (* strain without %)', &
+          ' (POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)'
         call userreadline( string, '(1. yes, 2. no) : ')
         read( string, *, iostat=check) strain_chs
         if( check .ne. 0) then
@@ -401,13 +425,16 @@
         write(*,*)'Which number of data do you want to get'
         write(*,'(1x,a,1x,i0)')'Number of data =',num_data
         write(*,'(a2,i0,a)') ' (',num_data,' is the final data)'
-        call userreadline( string, '(Integer) : ' )
+        !call userreadline( string, '(Integer) : ' )
+        ! uncomment here to choose data, usually 2 is the final data
+        string = '2'
         read(string,*,iostat=check) getdata_num
         if(check.gt.0) then
           goto 81
         elseif( num_data.lt.getdata_num.or.getdata_num.lt.1) then
           goto 81
         endif
+        write(*,'(i0)') getdata_num
 
         allocate(id(num))
         allocate(num_ele(maxid))
@@ -491,33 +518,43 @@
         write(*,*)
         write(*,*) &
           'Select which column in dump.GNR for X axis in getdata.lammps'
-        call userreadline( string, '(Integer) : ' )
+        !call userreadline( string, '(Integer) : ' )
+        ! z axis in dump.GNR for x axis in getdata.lammps
+        ! fixed temporary, uncomment when choose
+        ! 5, 3, 4 -> z, x, y, it depends on structure in material studio
+        string = '5'
         read( string,*,iostat=check) order
         if(check>0)then
           goto 71
         elseif (order.lt.3 .or. order.gt.8) then
           goto 71
         endif
+        write(*,'(i0)') order
         nx = order - 2
 
 72      continue
         write(*,*)
         write(*,*) &
           'Select which column in dump.GNR for Y axis in getdata.lammps'
-        call userreadline( string, '(Integer) : ' )
+        !call userreadline( string, '(Integer) : ' )
+        ! 5, 3, 4 -> z, x, y, it depends on structure in material studio
+        string = '3'
         read( string,*,iostat=check) order
         if(check>0)then
           goto 72
         elseif (order.lt.3 .or. order.gt.8 .or. order.eq.nx+2) then
           goto 72
         endif
+        write(*,'(i0)') order
         ny = order - 2
 
 73      continue
         write(*,*)
         write(*,*) &
           'Select which column in dump.GNR for Z axis in getdata.lammps'
-        call userreadline( string, '(Integer) : ' )
+        !call userreadline( string, '(Integer) : ' )
+        ! 5, 3, 4 -> z, x, y, it depends on structure in material studio
+        string = '4'
         read( string,*,iostat=check) order
         if(check>0)then
           goto 73
@@ -525,6 +562,7 @@
             order.eq.nx+2 .or. order.eq.ny+2) then
           goto 73
         endif
+        write(*,'(i0)') order
         nz = order - 2
 
         do i = 1, 3
@@ -702,10 +740,13 @@
             elseif( sele_fix .lt. 1 .or. sele_fix .gt. maxid) then
               goto 92
             endif
+            ! ****************************** vector perpendicular to
+            ! surface layer always fixed
+            ! user can modify later
             write(*,*)
             write(*,'(1x,a, a<len_dump>)') &
               'You selected : ', name_ele(sele_fix)
-            fix_x = 'F'
+            fix_x = 'T'
             fix_y = 'F'
             fix_z = 'T'
           case (3)
@@ -717,13 +758,13 @@
           case (4)
             write(*,*) 
             write(*,*) '(4) Fix Y axis; (Fix atoms in POSCAR)'
-            fix_x = 'F'
+            fix_x = 'T'
             fix_y = 'T'
             fix_z = 'F'
           case (5)
             write(*,*) 
             write(*,*) '(5) Fix Z axis; (Fix atoms in POSCAR)'
-            fix_x = 'F'
+            fix_x = 'T'
             fix_y = 'F'
             fix_z = 'T'
           case (6)
@@ -731,16 +772,176 @@
             write(*,'(1x, 2a)') &
               '(6) Fix lowest and highest dimer line;', &
               ' (this for strain and I-V later, fix along Z axis)'
-            fix_x = 'F'
+            fix_x = 'T'
             fix_y = 'F'
             fix_z = 'T'
           case default
             goto 93
           endselect
         endif
-        ! ############################## fix select finished
         endif
+        ! ############################## fix select finished
 
+        ! ##################################################
+        ! special case for strain and fix atoms
+        ! ##################################################
+        ! ############################## fix 2 speciees -> 
+        ! fix but with strain applied, or fix and without strain
+        ! ex. wide part fix -> apply strain will not affect position of
+        ! wide part
+
+      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+        write(*,*)
+        write(*,*) 'this is special case for fix species with strain'
+300   continue
+        write(*,*) 'Fixed species with / without strain'
+        write(*,*) 'Special for dumbbell-shape -> wide / narrow'
+        write(*,*) '( this time only can fix wide segment C atoms)'
+        call userreadline( string, &
+          '([1] with (normal); [2] without (new); ) : ')
+        read( string, *, iostat=chk_fix) fix_species
+        if( chk_fix .ne. 0) goto 300
+        if( fix_species .eq. 1) then
+          write(*,*)
+          write(*,*) '[1] with ;'
+          ! fixed part with strain -> normal situation
+          ! escape from here directly
+        elseif( fix_species .eq. 2) then
+          write(*,*)
+          write(*,*) '[2] without ;'
+          ! fixed part without strain -> new part
+          ! because narrwo and wide part have different yield ratio
+          ! posx2,posy2, posz2
+          ! no change with strain fixed part
+          ! new lattice parameter between wide part fixed
+
+        allocate(x_pos(3, num, maxid))
+        allocate(x_id(num))
+        allocate(y_id(num))
+        allocate(character(len=len_dump) :: x_name_ele(num))
+        allocate(character(len=len_dump) :: tmp_name_ele)
+
+          do i = 1, num
+          y_id(i) = id(i)
+          x_id(i) = id(i)
+          x_pos(1, i, x_id(i)) = posx2(i, getdata_num)
+          x_pos(2, i, x_id(i)) = posy2(i, getdata_num)
+          x_pos(3, i, x_id(i)) = posz2(i, getdata_num)
+          enddo
+        num_ele_low = 1
+        num_ele_hi = 0
+        do j=1, maxid
+        num_ele_hi = num_ele_hi + num_ele(j)
+        do i = num_ele_low, num_ele_hi
+
+        x_name_ele(i) = name_ele(j)
+
+        enddo
+        num_ele_low = num_ele_low + num_ele(j)
+        enddo
+
+        ! bubble sort
+        lo = 1
+        hi = num - 1
+        do k = lo, hi
+        l = 0
+        do i = lo, hi
+        if( x_pos(3, i, x_id(i)) .gt. &
+          x_pos(3, i+1, x_id(i+1))) then
+          tmp_int = y_id(i)
+          y_id(i) = y_id(i+1)
+          y_id(i+1) = tmp_int
+          do j = 1, 3
+          tmp_real = x_pos(j, i, x_id(i))
+          x_pos(j, i, x_id(i)) = x_pos(j, (i+1), x_id(i+1))
+          x_pos(j, (i+1), x_id(i+1)) = tmp_real
+          enddo
+          tmp_name_ele = x_name_ele(i)
+          x_name_ele(i) = x_name_ele(i+1)
+          x_name_ele(i+1) = tmp_name_ele
+          l = l + 1
+        endif
+        enddo
+        if( l .eq. 0) goto 999
+        hi = hi - 1
+        enddo
+
+999     continue
+
+        !do i = 1, num
+        !  write(*,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
+        !  (x_pos(j, i, x_id(i)), j = 1, 3), &
+        !  y_id(i), x_name_ele(i)
+        !enddo
+
+        j = 1
+        dime_ly = 1
+        num_wide = 1
+        re_num_narrow = 1
+        re_num_wide = 1
+        l = 0
+        do i = 2, num
+        if(trim(adjustl(x_name_ele(i))) .eq. 'H') then
+          !write(*,*) 'it is H, go next'
+          j = j
+          l = l + 1
+          if( l .gt. 2) then
+          if( x_pos(3, i, x_id(i)) .gt. &
+            x_pos(3, i-1, x_id(i-1))) then
+            !write(*,*) 'not the zigzag H line'
+            l = 1
+          else
+            z_po_l = x_pos(3, i, x_id(i))
+            z_l = l
+          endif
+          endif
+        elseif(trim(adjustl(x_name_ele(i))) .ne. 'H') then
+        dist_dime_ly = x_pos(3, i, x_id(i)) - x_pos(3, j, x_id(j))
+        !write(*,*) dist_dime_ly
+          if( dime_ly .eq. 2) then
+            re_num_narrow = num_wide
+            re_num_wide = num_wide
+          endif
+          num_wide = num_wide + 1
+          if(dist_dime_ly .ge. 1.40) then
+            if( re_num_narrow + 1 .gt. num_wide) then
+              !write(*,*) l, num_wide
+              re_num_narrow = num_wide - 1
+              re_num_wide = num_wide - 1
+              z_narrow_lo = x_pos(3, (j-num_wide-l+2), &
+                x_id(j-num_wide-l+2))
+            endif
+            if( dime_ly .gt. 2) then
+            if( re_num_wide + 1 .lt. num_wide) then
+              !write(*,*) l, num_wide, z_l
+              re_num_wide = num_wide - 1
+              z_narrow_hi = x_pos(3, (j-num_wide-z_l-l+1), &
+                x_id(j-num_wide-z_l-l+1))
+            endif
+            endif
+
+            num_wide = 0
+            dime_ly = dime_ly + 1
+            num_wide = num_wide + 1
+            l = 0
+            !write(*,*) dime_ly
+          endif
+          !write(*,*) num_wide
+          j = i
+          !write(*,*) x_pos(3, i, x_id(i)), x_pos(3, j, x_id(j))
+        endif
+        enddo
+        !z_narrow_hi = z_narrow_hi - 1.420272
+        !z_narrow_lo = z_narrow_lo - 1.420272
+
+        !write(*,*) re_num_narrow, z_narrow_lo, re_num_wide, z_narrow_hi
+      endif
+      endif
+
+        ! ############################## fix select finished
+        ! ##################################################
+
+        ! ############################## write files
         ! include strain or not strain with strain_nam as strain ratio
         strain_i = strain_lo
         do m = 1, num_fil
@@ -760,6 +961,8 @@
           (adjustr(vasp_ele(i)), i = 1, maxid)
         write(80000+m, '(<maxid>(1x, i5))') (num_ele(i), i = 1, maxid)
 
+        write(80000+m, '(a)') 'Selective dynamics' 
+        ! always add selective dynamics even all F F F
         if( format_co .eq. 1) then
         write(80000+m, '(a)') 'Direct'
         elseif( format_co .eq. 2) then
@@ -777,54 +980,110 @@
         num_ele_hi = num_ele_hi + num_ele(j)
         do i = num_ele_low, num_ele_hi
           ! position.fdf
+      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+        ! new species fixed strain only narrow part
+
+        if( posz2(i,getdata_num) .lt. z_narrow_lo) then
           write(50000+m,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
+          posz2(i,getdata_num), id(i), name_ele(j)
+        elseif( posz2(i,getdata_num) .le. z_narrow_hi) then
+          write(50000+m,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
+          posz2(i,getdata_num)+&
+          (posz2(i,getdata_num)-z_narrow_lo+0.710136)*strain_nam, &
+          id(i), name_ele(j)
+        elseif( posz2(i,getdata_num) .gt. z_narrow_hi) then
+          write(50000+m,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
+          posz2(i,getdata_num)+&
+          (z_narrow_hi-z_narrow_lo+1.420272)*strain_nam, &
+          id(i), name_ele(j)
+        endif
+
+      else
+          write(50000+m,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, id(i), name_ele(j)
+      endif
           ! POSCAR with relaxation all F F F
           if(vasp_out .eq. 1) then
             if( fix_type .ge. 3 .and. fix_type .le. 5) then
           write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
+
             elseif( fix_type .eq. 2) then
               if( j .eq. sele_fix) then
+      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+        ! new species fixed strain only narrow part
+        if( posz2(i,getdata_num) .lt. z_narrow_lo) then
           write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
+          posz2(i,getdata_num), fix_x, fix_y, fix_z, &
+          ' # ', trim(adjustl(vasp_ele(j)))
+
+        elseif( posz2(i,getdata_num) .le. z_narrow_hi) then
+          write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
+          posz2(i,getdata_num)+&
+          (posz2(i,getdata_num)-z_narrow_lo+0.710136)*strain_nam, &
+          fix_x, fix_y, fix_z, &
+          ' # ', trim(adjustl(vasp_ele(j)))
+        elseif( posz2(i,getdata_num) .gt. z_narrow_hi) then
+          write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
+          posz2(i,getdata_num)+&
+          (z_narrow_hi-z_narrow_lo+1.420272)*strain_nam, &
+          fix_x, fix_y, fix_z, &
+          ' # ', trim(adjustl(vasp_ele(j)))
+        endif
+
+      else
+          write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
+      endif
               else
           write(80000+m,'(3(1x,f11.6),2a)') &
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, &
-          ' F F F # ', trim(adjustl(vasp_ele(j)))
+          ' T F F # ', trim(adjustl(vasp_ele(j)))
               endif
             elseif( fix_type .eq. 6) then
               if( posz2(i,getdata_num) .eq. hi_z &
                 .or. posz2(i, getdata_num) .eq. lo_z) then
           write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
               else
           write(80000+m,'(3(1x,f11.6),2a)') &
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, &
-          ' F F F # ', trim(adjustl(vasp_ele(j)))
+          ' T F F # ', trim(adjustl(vasp_ele(j)))
               endif
 
             elseif( fix_type .eq. 1) then
           write(80000+m,'(3(1x,f11.6),2a)') &
-          posx2(i,getdata_num)*strain_nam, &
-          posy2(i,getdata_num)*strain_nam, &
+          posx2(i,getdata_num), &
+          posy2(i,getdata_num), &
           posz2(i,getdata_num)*strain_nam, &
-          ' F F F # ', trim(adjustl(vasp_ele(j)))
+          ' T F F # ', trim(adjustl(vasp_ele(j)))
             endif
           endif
           ! # is comment line in vasp and siesta
@@ -870,6 +1129,14 @@
         deallocate(posx2,posy2,posz2)
         deallocate(name_ele)
         deallocate(vasp_ele)
+
+      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+        deallocate(tmp_name_ele)
+        deallocate(x_pos)
+        deallocate(x_id)
+        deallocate(y_id)
+        deallocate(x_name_ele)
+      endif
 
         rewind(40)
         close(10)
