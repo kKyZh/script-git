@@ -1,0 +1,7 @@
+#!/bin/bash
+
+chmod 400 /home/boom9000/.ssh id_rsa
+git push
+
+wait
+chmod 000 /home/boom9000/.ssh id_rsa
