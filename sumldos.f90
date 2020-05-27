@@ -1,4 +1,5 @@
       program sumldos
+        use jsu_readline
         implicit none
         integer i,j,k,l
         integer chk_chotyp, chotyp ! choose type and check
@@ -606,12 +607,12 @@
           open(6001, file='getdata.lammps',&
           form='formatted', status='old', err=995, access='sequential')
          
-          read(6001,'(a)') dummy
+          read(6001,*) dummy
           ! read total atoms
-          read(6001,'(i8,1x,a5)') num, dummy
+          read(6001,*) num, dummy
           ! write(*,'(i6,1x,a5)') num, dummy
           ! only read atom types
-          read(6001,'(i3,1x,(a))') maxid, dummy
+          read(6001,*) maxid, dummy
           backspace(6001)
           ! go back one line in read file
 
@@ -622,8 +623,8 @@
           allocate(num_ele(maxid))
 
           ! read atom # in maxid types
-          read(6001,'(a14,1x,<maxid>(i6))') &
-            dummy, (num_ele(j), j=1, maxid)
+          read(6001,*) &
+            (dummy, j=1, 3), (num_ele(j), j=1, maxid)
 
           ! read dummy lattice cell
           do i=1, 6

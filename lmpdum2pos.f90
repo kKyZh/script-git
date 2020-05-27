@@ -241,9 +241,10 @@
         ! strain with each line
 91      continue
         write(*,*)
-        write(*,'(3a)') 'Do you need strain?', &
+        write(*,'(4a)') 'Do you need strain?', &
           ' (position.fdf -> position_*.fdf) (* strain without %)', &
-          ' (POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)'
+          ' (POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)', &
+          ' (Uniaxial strain along Z axis for I-V calculation)'
         call userreadline( string, '(1. yes, 2. no) : ')
         read( string, *, iostat=check) strain_chs
         if( check .ne. 0) then
@@ -952,9 +953,9 @@
         write(80000+m,'(a)') '1.0'
         real_zero = 0.000000
         write(80000+m, '(3(1x,f11.6))') &
-          cellx(getdata_num)*strain_nam, real_zero, real_zero 
+          cellx(getdata_num), real_zero, real_zero 
         write(80000+m, '(3(1x,f11.6))') &
-          real_zero, celly(getdata_num)*strain_nam, real_zero 
+          real_zero, celly(getdata_num), real_zero 
         write(80000+m, '(3(1x,f11.6))') &
           real_zero, real_zero, cellz(getdata_num)*strain_nam
         write(80000+m, '(<maxid>(1x, a5))') &

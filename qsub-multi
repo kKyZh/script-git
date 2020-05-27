@@ -328,7 +328,6 @@ done
     echo
     popd > /dev/null
   done
-  echo
   echo '------------------------------'
   echo
   qstat -u boom9000

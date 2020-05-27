@@ -29,7 +29,7 @@
         character(3), allocatable :: i_nu_lb(:)!transfer from i to char
         character(8), allocatable :: lb_el(:)!label of element
         character(8), allocatable :: tmp_lb_el(:)!label of element
-        character(8), allocatable :: rp_vl(:)!constant repeat value
+        character(16), allocatable :: rp_vl(:)!constant repeat value
         character(16), allocatable :: i_cell(:)!transfer from i to cahr
         character(16) i_nutot_at, i_nutot_sp
         character(16) i_i !transfer i from i to char
@@ -169,6 +169,9 @@
 3000    continue
         write(*,*)
         write(*,*)'Please name the input file (Less than 32 characters)'
+        write(*,'(2a)') &
+          ' (only *.fdf files with entered file name, below, ', &
+          'will be checked for existance or not)'
         call userreadline( filename, &
           '(file name without .extensions.) : ')
         inquire(file=''//trim(filename)//'.fdf',exist=chk_filex)
@@ -278,6 +281,9 @@
           ' (siestaInput.fdf -> siestaInput_*.fdf)', &
           ' (* strain without %)', &
           ' (INCAR -> mkdir strain_* -> ./strain_*/INCAR)'
+        write(*,'(2a)') &
+          'Check position files later!!!', &
+          ' Uniaxial strain along Z axis for I-V !!!'
         call userreadline( string, '(1. yes, 2. no) : ')
         read( string, *, iostat=check) strain_chs
         if( check .ne. 0) then
@@ -670,63 +676,66 @@
 
         ! ====================================== INCAR write
         if(vasp_out .eq. 1) then
-        write(80000+m, '(6a)') &
-          'System', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'System', ' = ',&
           ''//trim(adjustl(filename))//'_'&
           //trim(adjustl(strain_chr_nam))//''
-        write(80000+m, '(7a)') &
-          'PREC', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'PREC', ' = ',&
           'Low'
-        write(80000+m, '(7a)') &
-          'LREAL', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'LREAL', ' = ',&
           'Auto'
-        write(80000+m, '(7a)') &
-          'EDIFF', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'EDIFF', ' = ',&
           '0.1'
-        write(80000+m, '(6a)') &
-          'EDIFFG', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'EDIFFG', ' = ',&
           '-0.1'
-        write(80000+m, '(6a)') &
-          'ISTART', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'ISTART', ' = ',&
           '1'
-        write(80000+m, '(6a)') &
-          'ICHARG', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'ICHARG', ' = ',&
           '1'
-        write(80000+m, '(7a)') &
-          'ISYM', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'ISYM', ' = ',&
           '2'
-        write(80000+m, '(6a)') &
-          'LCHARG', (trim(tab),nu_tb=1,3), '= ',&
-          '.FALSE.'
-        write(80000+m, '(6a)') &
-          'ISMEAR', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'LWAVE', ' = ',&
+          '.TRUE.'
+        write(80000+m, '(3a)') &
+          'LCHARG', ' = ',&
+          '.TRUE.'
+        write(80000+m, '(3a)') &
+          'ISMEAR', ' = ',&
           '1'
-        write(80000+m, '(7a)') &
-          'NSIM', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'NSIM', ' = ',&
           '4'
-        write(80000+m, '(7a)') &
-          'ENCUT', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'ENCUT', ' = ',&
           '350'
-        write(80000+m, '(6a)') &
-          'IBRION', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'IBRION', ' = ',&
           '2'
-        write(80000+m, '(7a)') &
-          'ISIF', (trim(tab),nu_tb=1,4), '= ',&
-          '3'
-        write(80000+m, '(8a)') &
-          'NSW', (trim(tab),nu_tb=1,5), '= ',&
+        write(80000+m, '(3a)') &
+          'ISIF', ' = ',&
+          '4'
+        write(80000+m, '(3a)') &
+          'NSW', ' = ',&
+          '25'
+        write(80000+m, '(3a)') &
+          'NELM', ' = ',&
           '120'
-        write(80000+m, '(7a)') &
-          'NELM', (trim(tab),nu_tb=1,4), '= ',&
-          '120'
-        write(80000+m, '(7a)') &
-          'ISPIN', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'ISPIN', ' = ',&
           '2'
-        write(80000+m, '(6a)') &
-          'LORBIT', (trim(tab),nu_tb=1,3), '= ',&
+        write(80000+m, '(3a)') &
+          'LORBIT', ' = ',&
           '11'
-        write(80000+m, '(7a)') &
-          'IALGO', (trim(tab),nu_tb=1,4), '= ',&
+        write(80000+m, '(3a)') &
+          'IALGO', ' = ',&
           '48'
         ! ====================================== copy KPOINTS
         call execute_command_line(&
@@ -862,13 +871,12 @@
         do i=1,3
         rp_vl(i)='90.000000'
         enddo
-        do j=1,3
-        cell(j) = cell(j) * strain_nam
-        write(i_cell(j), '(f11.6)')cell(j)
-        enddo
-        write(50000+m,'(12a)')&
-          ((trim(tab),(trim(adjustl(i_cell(i))))),i=1,3),&
-          ((trim(tab),(trim(adjustl(rp_vl(i))))),i=1,3)
+        ! #################### uniaxial strain along Z axis for I-V
+        !((trim(tab),(trim(adjustl(i_cell(i))))),i=1,3),& <- stupid!!!
+        write(50000+m,'(3(1x, f11.6), 3(1x, a))')&
+          cell(1), cell(2), cell(3)*strain_nam, &
+          (trim(adjustl(rp_vl(i))),i=1,3)
+        ! #################### uniaxial strain along Z axis for I-V
         write(50000+m,'(a)')'%endblock LatticeParameters'
         write(50000+m,*)
 

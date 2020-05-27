@@ -1,35 +1,56 @@
-!-------------------------------------------------------------------------------
-MODULE jsu_readline
-   USE ISO_C_BINDING
-   IMPLICIT NONE
-   PRIVATE
-   PUBLIC iso_readline
-!-------------------------------------------------------------------------------
-! define the call to the C routine
-! extern char     *Freadline(int ilen, char *buf, char prompt[]);
-  PUBLIC ::  Freadline
-   INTERFACE
-      SUBROUTINE Freadline(ilen,buf,prompt) BIND(C,NAME='FCreadline')
-         USE ISO_C_BINDING
-         IMPLICIT NONE
-         INTEGER(KIND=C_INT),INTENT(IN),VALUE      ::  ilen
-         CHARACTER(KIND=C_CHAR),intent(out)  ::  buf(*)
-         CHARACTER(KIND=C_CHAR),intent(in)   ::  prompt(*)
-      END SUBROUTINE Freadline
-   END INTERFACE
-!-------------------------------------------------------------------------------
-contains
-! the routine that calls the C routine
-SUBROUTINE iso_readline(line,prompt)
-   USE ISO_C_BINDING
-   IMPLICIT NONE
-   CHARACTER(KIND=C_CHAR,LEN=*),INTENT(OUT) :: line
-   CHARACTER(KIND=C_CHAR,LEN=*),INTENT(IN)  :: prompt
+      module jsu_readline
 
-   ! trim to last non-blank character and append null for C
-   CALL Freadline(LEN(line),line,prompt(:LEN_TRIM(prompt))//ACHAR(0))
+        use iso_c_binding
+        implicit none
+        private
+        public iso_readline
+        public Freadline
+        public userreadline
+        public Fuserreadline
 
- END SUBROUTINE iso_readline
-!-------------------------------------------------------------------------------
-END MODULE jsu_readline
-!-------------------------------------------------------------------------------
+        interface
+          subroutine Freadline(ilen, string, prompt)&
+              bind(C, name="FCreadline")
+            use iso_c_binding 
+            implicit none
+            integer(kind=c_int) ,intent(in) :: ilen
+            character(kind=c_char), intent(out) :: string(*)
+            character(kind=c_char), intent(in) :: prompt(*)
+          endsubroutine Freadline
+
+          subroutine Fuserreadline(ilen, string, prompt)&
+              bind(C, name="FCuserreadline")
+            use iso_c_binding 
+            implicit none
+            integer(kind=c_int) ,intent(in) :: ilen
+            character(kind=c_char), intent(out) :: string(*)
+            character(kind=c_char), intent(in) :: prompt(*)
+          endsubroutine Fuserreadline
+        endinterface
+
+        contains
+          subroutine iso_readline(string, prompt)
+            use iso_c_binding
+            implicit none
+            character(kind=c_char, len=*), intent(out) :: string
+            character(kind=c_char, len=*), intent(in) :: prompt 
+
+            call Freadline(len(string), string,&
+            prompt(:len_trim(prompt))//achar(0))
+          ! // achar(0) for trancate all spaces after prompt last letter
+
+          endsubroutine iso_readline
+
+          subroutine userreadline(string, prompt)
+            use iso_c_binding
+            implicit none
+            character(kind=c_char, len=*), intent(out) :: string
+            character(kind=c_char, len=*), intent(in) :: prompt 
+
+            call Fuserreadline(len(string), string,&
+            prompt(:len(prompt))//achar(0))
+            !prompt(:len_trim(prompt))//achar(0))
+          ! // achar(0) for trancate all spaces after prompt last letter
+
+          endsubroutine userreadline
+      endmodule jsu_readline

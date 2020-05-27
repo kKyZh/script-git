@@ -46,7 +46,7 @@
 
         write(*,*)
         write(*,'(1x,2a)')'Running... getdump file from dump.GNR... ',&
-                '(Version --2.12 beta//May/17/2019//)'
+                '(Version --3.1 beta//Apr/15/2020//)'
         write(*,*)
         write(*,*)'Include manual option: -h '
         write(*,*)'By using ==> car2Lammps -h '

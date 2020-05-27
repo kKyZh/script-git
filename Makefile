@@ -1,24 +1,7 @@
-# practice of makefile
-# @ not show this line but show the content of echo
-# name: execute line must have a tab at beginning
-#
+.SUFFIXES: .f90 .c .o
 
-#fdf2xyz.o: #fdf2xyz.f90
-#$(FC) -c fdf2xyz.f90
-#fdf2xyzf90: #fdf2xyz.f90
-#$(FC) -o fdf2xyz.f90 fdf2xyz.o
-	#"$<" meaning?
-	#$@ $^ meaning?
-	#.f source file, .o target file
-	#$< source file, $@ target file
-	#$< first prerequisite
-	#$^ all prerequisite
-	#$@ all target file
-	#$@ all, $< abc.f90, $^ abc.f90 def.f90
-# suffixes rules .a.b, like .f.o, when you see .f, make a .o file
-.SUFFIXES: .f90 .f .c .o
-
-all: say_hello fdf2xyzf90
+EXECS = sumldosf90 lmpdum2posf90 crt4run_shf90 crtfil4trasief90 # crtfil4tbtf90 getiv2datf90 testf90 vaspout2positionf90 
+all: $(EXECS)
 
 FC=ifort
 FC:=ifort
@@ -27,43 +10,45 @@ cc:=icc
 
 LDLIBS= -lreadline
 
-OBJ= fdf2xyz.o \
-		 fdf2xyz_print.o \
-		 fdf2xyz_inputfilename.o \
-		 jsu_readline.o \
-		 FCreadline.o \
-		 fdf2xyz_readfile.o \
-		 fdf2xyz_read2end.o \
-		 fdf2xyz_allocatable.o \
-		 readcharlen.o \
-		 readatomname.o \
-		 userread.o \
-		 writefilecheck.o
+test_obj= test.o jsu_readline.o FCreadline.o
+getiv2dat_obj= getiv2dat.o
+crt4run_sh_obj= crt4run_sh.o jsu_readline.o FCreadline.o strain_get.o
+crtfil4tbt_obj= crtfil4tbt.o jsu_readline.o FCreadline.o
+lmpdum2pos_obj= lmpdum2pos.o jsu_readline.o FCreadline.o manual.o Lammps2fdf.o changeatnum.o
+crtfil4trasie_obj= crtfil4trasie.o jsu_readline.o FCreadline.o manual.o
+vaspout2positionf90_obj= vaspout2position.o jsu_readline.o FCreadline.o strain_get.o
+sumldosf90_obj= sumldos.o jsu_readline.o FCreadline.o
 
-say_hello:
-	@echo "Hello man"
-
-fdf2xyzf90: $(OBJ)
+sumldosf90: $(sumldosf90_obj)
 	$(FC) -o $@ $^ $(LDLIBS)
-
-.f90.o: 
-	$(FC) -c $< 
-
-.f.o: 
+testf90: $(test_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+vaspout2positionf90: $(vaspout2positionf90_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+crtfil4trasief90: $(crtfil4trasie_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+crt4run_shf90: $(crt4run_sh_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+crtfil4tbtf90: $(crtfil4tbt_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+lmpdum2posf90: $(lmpdum2pos_obj)
+	$(FC) -o $@ $^ $(LDLIBS)
+getiv2datf90: $(getiv2dat_obj)
+	$(FC) -o $@ $^
+.f90.o:
 	$(FC) -c $<
+.c.o:
+	$(cc) -c $<
 
-.c.o: 
-	$(cc) -c $< 
-
-#writefilecheck.o: fdf2xyz_print.o
-#userread.o: fdf2xyz_allocatable.o jsu_readline.o
-#readatomname.o: fdf2xyz_allocatable.o
-fdf2xyz_readfile.o: fdf2xyz_read2end.o readcharlen.o fdf2xyz_allocatable.o readatomname.o userread.o \
-			writefilecheck.o #fdf2xyz_print.o 
+sumldos.o: jsu_readline.o
+test.o: jsu_readline.o
 jsu_readline.o: FCreadline.o
-fdf2xyz_inputfilename.o: fdf2xyz_print.o
-fdf2xyz.o: fdf2xyz_inputfilename.o jsu_readline.o fdf2xyz_readfile.o #fdf2xyz_print.o 
+vaspout2position.o: jsu_readline.o strain_get.o
+crtfil4trasie.o: jsu_readline.o manual.o
+crt4run_sh.o: jsu_readline.o strain_get.o
+crtfil4tbt.o: jsu_readline.o
+lmpdum2pos.o: jsu_readline.o manual.o Lammps2fdf.o changeatnum.o
 
 clean:
 	@echo "cleaning up..."
-	rm -f *.o *.mod fdf2xyzf90
+	rm -f $(EXECS) *.o *.mod
