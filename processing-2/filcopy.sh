@@ -15,9 +15,6 @@ echo cp crt4run ~/bin
 echo cp crt4run_sh.f90 ../
 echo cp crt4run_sh.f90 ../backup
 echo cp crt4run_sh.f90 ~/script-git
-echo cp crt4run_shf90 ../
-echo cp crt4run_shf90 ../backup
-echo cp crt4run_shf90 ~/script-git
 echo cp crt4run_shf90 ~/bin
 echo cp getiv2dat ../
 echo cp getiv2dat ../backup
@@ -55,10 +52,14 @@ echo cp crtfil4trasief90 ~/bin
 echo cp strain_get.f90 ../
 echo cp strain_get.f90 ../backup
 echo cp strain_get.f90 ~/script-git
-echo cp vasp2fdf.f90 ../
-echo cp vasp2fdf.f90 ../backup
-echo cp vasp2fdf.f90 ~/script-git
-echo cp vasp2fdff90 ~/bin
+echo cp vaspout2position.f90 ../
+echo cp vaspout2position.f90 ../backup
+echo cp vaspout2position.f90 ~/script-git
+echo cp vaspout2positionf90 ~/bin
+echo cp getldos ../
+echo cp getldos ../backup
+echo cp getldos ~/script-git
+echo cp getldos ~/bin
 #echo cp qdel-multi ../
 #echo cp qdel-multi ../backup
 #echo cp qdel-multi ~/script-git
@@ -83,9 +84,6 @@ cp crt4run ~/bin
 cp crt4run_sh.f90 ../
 cp crt4run_sh.f90 ../backup
 cp crt4run_sh.f90 ~/script-git
-cp crt4run_shf90 ../
-cp crt4run_shf90 ../backup
-cp crt4run_shf90 ~/script-git
 cp crt4run_shf90 ~/bin
 cp getiv2dat ../
 cp getiv2dat ../backup
@@ -123,10 +121,14 @@ cp crtfil4trasief90 ~/bin
 cp strain_get.f90 ../
 cp strain_get.f90 ../backup
 cp strain_get.f90 ~/script-git
-cp vasp2fdf.f90 ../
-cp vasp2fdf.f90 ../backup
-cp vasp2fdf.f90 ~/script-git
-cp vasp2fdff90 ~/bin
+cp vaspout2position.f90 ../
+cp vaspout2position.f90 ../backup
+cp vaspout2position.f90 ~/script-git
+cp vaspout2positionf90 ~/bin
+cp getldos ../
+cp getldos ../backup
+cp getldos ~/script-git
+cp getldos ~/bin
 #cp qdel-multi ../
 #cp qdel-multi ../backup
 #cp qdel-multi ~/script-git

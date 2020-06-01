@@ -1,0 +1,378 @@
+#!/bin/bash
+
+spinner=('.  ' '.. ' '...')
+lquit=('q' 'Q' 'quit' 'Quit')
+
+spin(){
+while [ 1 ]
+do
+  for i in "${spinner[@]}"
+  do
+    echo -ne "\rRunning, please wait $i ("$1"/"$2") "
+  sleep 1
+  done
+done
+}
+
+echo
+echo 'Bash for obtaining LDOS(PDOS) --Version1.88 //May/01/2019//'
+echo 'Warning : Check the position file before run'
+echo 'Please prepare *.fdf & *.PDOS & *.bands files'
+echo 'Information : Auto-save *.png files & display each plot for 2 second'
+echo '            : Initialized intensity of DOS'
+### find one method to plot figure properly by itself
+### adjust y axis value automatically future
+### species is settled at 50.0; atom number is settled at 1.0
+### after initialized y range is settled at 1.0
+
+echo
+echo 'This will run new.fmpdos automatically later, PLEASE CONFIRM to REVISE *.PDOS before RUN!!!'
+echo 'These files will be copied to ldos directory. (ldos directory will be created if not existed)'
+echo
+ls *.bands *.PDOS *.fdf
+
+while true; do
+  echo
+  echo 'Are you sure to continue?'
+  echo '(y for yes, n for no)'
+  read -p '==>  ' -e chs_0
+  history -s "$chs_0"
+  case $chs_0 in
+    [yY]*)
+      echo
+      echo 'continue'
+      echo
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo 'quit... bye'
+      echo
+      exit
+      ;;
+    *)
+      echo
+      echo 'Error : Please choose y for yes, n for no'
+  esac
+done
+
+if [ ! -d ldos ]; then
+  mkdir ldos
+  cp *.bands *.PDOS *.fdf ldos
+  cp getdata.lammps ldos
+elif [ -d ldos ]; then
+  echo 'ldos already existed, doing copy directly'
+  cp *.bands *.PDOS *.fdf ldos
+fi
+
+while true; do
+  echo
+  echo 'Do you want to plot *.png figures during auto-saving'
+  echo '(y for yes, n for no, q for quit)'
+  read -p '==>  ' -e chs_1
+  history -s "$chs_1"
+  case $chs_1 in
+    [yY]*)
+      echo
+      echo 'You choose plot'
+      break 1
+      ;;
+    [nN]*)
+      echo
+      echo 'You choose no plot'
+      break 1
+      ;;
+    [qQ]*)
+      echo
+      echo 'You choose quit... bye'
+      echo
+      exit
+      ;;
+    *)
+      echo
+      echo 'Error : Please choose y for yes, n for no, q for quit'
+  esac
+done
+
+cd ldos
+echo $PWD
+
+while true; do
+  echo
+  ls *
+  #ls *.PDOS
+  echo
+  echo 'Please select *.PDOS file'
+  read -p '==>  ' -e chs_inpfil
+  history -s "$chs_inpfil"
+  filename=${chs_inpfil//.PDOS}'.fdf'
+  filename2=${chs_inpfil//.PDOS}'.bands'
+  ### delet .PDOS add .fdf .bands
+  ### .bands uses new.fmpdos.f or new.fmpdos.f90(future)
+  if [[ ${lquit[*]} =~ $chs_inpfil ]]; then
+    ### what is =~ ? operator?? match?? expression??
+    echo
+    echo 'You chosse "Quit", bye!'
+    echo
+    exit
+  elif [[ ! -e $chs_inpfil ]]; then
+    echo
+    echo 'Error : File *.PDOS not exist;'
+    echo '        Try again;'
+  elif [[ ! $chs_inpfil == *.PDOS ]]; then
+    echo
+    echo 'Error : No *.PDOS file selected;'
+    echo '        Try again;'
+  elif [[ ! -e $filename ]]; then
+    echo
+    echo 'Error : File *.fdf not exist;'
+    echo '        Try again;'
+  elif [[ ! -e $filename2 ]]; then
+    echo
+    echo 'Error : File *.bands not exist;'
+    echo '        Try again;'
+  else
+    break 1
+  fi 
+done
+
+while true; do
+echo
+echo Please choose type
+echo "(1) Atom species;"
+echo "(2) Atom number;"
+echo '(Q) "Quit";'
+read -p '==>  ' -e chs_typ
+history -s "$chs_typ"
+case $chs_typ in
+  1)
+    echo
+    echo 'You choose (1) Atom species'
+    break 1
+    ;;
+  2)
+    echo
+    echo 'You choose (2) Atom number'
+    break 1
+    ;;
+  [Qq]*)
+    echo
+    echo 'You chosse "Quit", bye!'
+    echo
+    exit
+    ;;
+  *)
+esac
+done
+
+while true; do
+  chk='^[+-]?[0-9]+([.][0-9]+)?$'
+  echo
+  echo Please enter the range of initialized eV
+  echo '(Ef will be shifted to 0 eV)'
+  read -p '==>  ' -e chs_rang
+  history -s "$chs_rang"
+  if [[ ! $chs_rang =~ $chk ]] 2>/dev/null; then
+    echo
+    echo 'Error : Need a number'
+  else
+    break 1
+  fi
+done
+  
+if [[ $chs_typ -eq 1 ]]; then
+
+  eval chk_lo=$(grep -n "%block ChemicalSpeciesLabel" $filename | awk -F: '{print $1}')
+  eval chk_hi=$(grep -n "%endblock ChemicalSpeciesLabel" $filename | awk -F: '{print $1}')
+
+  while true; do
+  echo
+  echo 'Atom species : '
+    awk 'NR>'$chk_lo' && NR<'$chk_hi'{print $3}' $filename
+  echo
+  echo 'Enter the name of atom species'
+  read -p '==>  ' -e species
+  history -s "$species"
+
+  if [[ $species = "--help" ]]; then
+      echo
+      echo 'Error : Species "'$species'" not found in "'$filename'"'
+  elif awk 'NR>'$chk_lo' && NR<'$chk_hi'{print $3}' $filename | grep -Fwq "$species" 2>/dev/null; then
+    # Fxq is copy from internet
+    # -F --fixed-strings; -x --line match whole line; -q --quiet --silent; -w --word
+  outfil='PDOS_'$species'.dat'
+  ### PDOS or LDOS both okay
+### fmpdos
+  echo
+  echo '----------------------------------------'
+  spin "1" "1" &
+  pid=$!
+  new.fmpdos $chs_inpfil $outfil $species $chs_rang &>/dev/null
+  outpng=${outfil//.dat}'.png'
+  figtitl=${chs_inpfil//.PDOS}
+
+  if [[ $chs_1 =~ ^(y|Y)$ ]]; then
+gnuplot <<EOF 
+  set term png font "arial,20" size 640,480
+  set output "$outpng"
+  set title "$figtitl" offset 0,-0.85,0
+  set border lw 2
+  set xlabel "Energy (eV)" offset 0,1.25,0
+  set xtics offset 0,0.5,0
+  set xrange [ -1.0 : 1.0 ] 
+  set ylabel "LDOS" offset 2.6,0,0 rotate by 90
+  set ytics offset 0.75,0,0
+  set yrange [ 0.0 : 1.0 ]
+  set key samplen 0.2 spacing 0.8 right
+  plot "$outfil" title "$species" w l lc rgb "red" lw 2
+  set term qt font "arial,20" size 640,480
+  set output 
+  replot
+  pause 2
+EOF
+  elif [[ $chs_1 =~ ^(n|N)$ ]]; then
+gnuplot <<EOF 
+  set term png font "arial,20" size 640,480
+  set output "$outpng"
+  set title "$figtitl" offset 0,-0.85,0
+  set border lw 2
+  set xlabel "Energy (eV)" offset 0,1.25,0
+  set xtics offset 0,0.5,0
+  set xrange [ -1.0 : 1.0 ] 
+  set ylabel "LDOS" offset 2.6,0,0 rotate by 90
+  set ytics offset 0.75,0,0
+  set yrange [ 0.0 : 1.0 ]
+  set key samplen 0.2 spacing 0.8 right
+  plot "$outfil" title "$species" w l lc rgb "red" lw 2
+EOF
+  fi
+
+  kill $pid &>/dev/null
+  wait $pid &>/dev/null
+  echo
+  echo
+  echo 'File "'$outfil'" created'
+  echo 'File "'$outpng'" created'
+  echo
+  echo '----------------------------------------'
+    while true; do
+    echo
+    echo 'Do you have anymore atom species? (y/n)'
+    read -p '==>  ' -e chs
+    history -s "$chs"
+    case $chs in
+      [yY]*)
+        break 1
+        ;;
+      [nN]*)
+        echo
+        break 2
+        ;;
+      *)
+    esac
+    done
+  else
+    echo
+    echo 'Error : Species "'$species'" not found in "'$filename'"'
+  fi
+  done
+
+elif [[ $chs_typ == 2 ]]; then
+
+  eval limit=$(awk '/NumberOfAtoms/{print $2}' $filename)
+  ### eval and awk in bash command
+
+  while true; do
+  echo
+  echo 'Please enter the minimum atom number'
+  echo '(0 < min <= '$limit')'
+  read -p '==>  ' -e min
+  history -s "$min"
+  ### check the number is integer
+  if [[ ! $min -gt 0 || $min -gt $limit ]] 2>/dev/null ; then
+    ### integer don't know why
+    echo
+    echo 'Error : Enter again;'
+  else
+    break 1
+  fi
+  done
+
+  while true; do
+  echo
+  echo 'Please enter the maximum atom number'
+  echo '(min <= max <= '$limit')'
+  read -p '==>  ' -e max
+  history -s "$max"
+  if [[ ! $max -ge $min || $max -gt $limit ]] 2>/dev/null ; then
+    echo
+    echo 'Error : Enter again;'
+  else
+    break 1
+  fi
+  done
+
+  echo
+  echo '-----------------------------------------'
+  for (( nufil=$min; nufil<=$max; nufil++ ))
+  do
+    outfil='PDOS_'$nufil'.dat'
+  spin "$nufil" "$max" &
+  pid=$!
+  new.fmpdos $chs_inpfil $outfil $nufil $chs_rang &>/dev/null
+  outpng=${outfil//.dat}'.png'
+  figtitl=${chs_inpfil//.PDOS}
+
+  if [[ $chs_1 =~ ^(y|Y)$ ]]; then
+gnuplot <<EOF 
+  set term png font "arial,20" size 640,480
+  set output "$outpng"
+  set title "$figtitl" offset 0,-0.85,0
+  set border lw 2
+  set xlabel "Energy (eV)" offset 0,1.25,0
+  set xtics offset 0,0.5,0
+  set xrange [ -1.0 : 1.0 ] 
+  set ylabel "LDOS" offset 2.6,0,0 rotate by 90
+  set ytics offset 0.75,0,0
+  set yrange [ 0.0 : 1.0 ]
+  set key samplen 0.2 spacing 0.8 right
+  plot "$outfil" title "$nufil" w l lc rgb "red" lw 2
+  set term qt font "arial,20" size 640,480
+  set output 
+  replot
+  pause 2
+EOF
+  elif [[ $chs_1 =~ ^(n|N)$ ]]; then
+gnuplot <<EOF 
+  set term png font "arial,20" size 640,480
+  set output "$outpng"
+  set title "$figtitl" offset 0,-0.85,0
+  set border lw 2
+  set xlabel "Energy (eV)" offset 0,1.25,0
+  set xtics offset 0,0.5,0
+  set xrange [ -1.0 : 1.0 ] 
+  set ylabel "LDOS" offset 2.6,0,0 rotate by 90
+  set ytics offset 0.75,0,0
+  set yrange [ 0.0 : 1.0 ]
+  set key samplen 0.2 spacing 0.8 right
+  plot "$outfil" title "$nufil" w l lc rgb "red" lw 2
+EOF
+  fi
+
+  kill $pid &>/dev/null
+  wait $pid &>/dev/null
+  done
+    echo
+    echo
+  for (( nufil=$min; nufil<=$max; nufil++ ))
+  do
+    outfil='PDOS_'$nufil'.dat'
+    outpng=${outfil//.dat}'.png'
+    echo 'File "'$outfil'" created'
+    echo 'File "'$outpng'" created'
+  done
+  echo
+  echo '-----------------------------------------'
+  echo
+
+fi

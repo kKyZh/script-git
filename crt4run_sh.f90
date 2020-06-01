@@ -102,7 +102,7 @@
         write(*,'(1x,a)')'---------- INFORMATION: FOR CCMS ------------'
         write(*,*)
         write(*,*)'Creating a shell scrip for CCMS ==> run.sh'
-        write(*,*)'(version-2.41 //May/10/2020/)'
+        write(*,*)'(version-2.41 //May/28/2020/)'
         write(*,*)
         if(chs_10==1)then
           write(*,*)'------ For Full SIESTA and TranSIESTA ------'
@@ -113,7 +113,7 @@
         elseif(chs_10==5)then
           write(*,*)'------ For TranSIESTA ------'
         elseif(chs_10==4)then
-          write(*,*)'------ For SIESTA ------'
+          write(*,*)'------ For SIESTA w/wo strain ------'
         elseif(chs_10==3)then
           write(*,*)'------ For Lammps ------'
         elseif(chs_10==2)then
@@ -361,7 +361,7 @@
         endif
 
 990     continue
-      if( chs_2 .eq. 4) then
+      if( chs_10 .eq. 7 .or. chs_10 .eq. 4) then
         write(*,*)
         write(*,*) '---------- list strain_* directories ----------'
         status= system( &
@@ -371,15 +371,20 @@
         endif
         write(*,*) '-----------------------------------------------'
         write(*,*)
+        if( chs_10 .eq. 7) then
         write(*,*) &
           'For VASP with / without strain in GPU -> run-vasp-gpu_*.sh'
+        elseif( chs_10 .eq. 4) then
+        write(*,*) &
+          'SIESTA with / without strain -> run*_*.sh'
+        endif
         call strain_get( strain_chs, num_fil, &
           strain_lo, strain_hi, strain_in, &
           len_strain_nam, len_fra_strain_nam, len_fra_percent)
         i = 0
         if( strain_chs .eq. 1) then
           write(*,*)
-          write(*,*) 'VASP in GPU with strain'
+          write(*,*) 'VASP in GPU or SIESTA with strain'
           do strain_i = strain_lo, strain_hi, strain_in
           i = i + 1
           strain_nam = (100 + strain_i) / 100.0
@@ -398,9 +403,11 @@
           write(*,*)
         elseif( strain_chs .eq. 2) then
           write(*,*)
-          write(*,*) 'VASP in GPU without strain'
+          write(*,*) 'VASP in GPU or SIESTA without strain'
         endif
-      else
+      endif
+
+      if( chs_10 .ne. 7) then
         write(*,*)
         write(*,*)'----------------------------------------------------'
         write(*,*)'List of all *.fdf files : '
@@ -780,22 +787,118 @@
 
         ! ------------------ for aprun siesta -----------------
 1004    continue
+        i = 0
+        if( strain_chs .eq. 1) then
+          do strain_i = strain_lo, strain_hi, strain_in
+          i = i + 1
+          strain_nam = (100 + strain_i) / 100.0
+          write( strain_chr_nam, &
+            '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
+
+        ! run-vasp-gpu_*.sh is not okay for qsub-multi
+        ! - can not be read properly in pushd and popd in qsub-multi
+        ! use _ or others instead of -
+        if(chs_2==2.or.chs_2==1)then
+        open(10000+i,&
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//&
+          '/run_'&
+          //trim(adjustl(strain_chr_nam))//'.sh', &
+          form='formatted', err=9999, & 
+          status='unknown', access='sequential')
+        elseif(chs_2==3)then
+        open(10000+i,&
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//&
+          '/run-gpu_'&
+          //trim(adjustl(strain_chr_nam))//'.sh', &
+          form='formatted', err=9999, & 
+          status='unknown', access='sequential')
+        endif
+
+        write(10000+i,'(a)')'#!/bin/sh'
+        ! queue type
+        write(10000+i,'(2a)')'#PBS -q ', trim(slt_2)
+        ! wall time select ------------------------------------
+        write(10000+i,'(3a)')'#PBS -l walltime=',trim(i_chs_3),':00:00'
+        ! job nodes
+        write(10000+i,'(2a)')'#PBS -l select=',trim(adjustl(i_chs_4))
+        ! job name
+        write(10000+i,'(4a)')'#PBS -N ',trim(chs_5),'_',&
+          trim(adjustl(strain_chr_nam))
+        ! send email
+        write(10000+i,'(a)')'#PBS -m be'
+        write(10000+i,'(a)') & 
+          '#PBS -M zhang.qinqiang@rift.mech.tohoku.ac.jp'
+        ! go work directory not sure the meaning of it
+        write(10000+i,'(a)')'cd ${PBS_O_WORKDIR}'
+        write(10000+i,*)
+        ! nu_job_fil_lo, nu_job_fil_hi write in submit file
+        ! due to stack limit in GPU for tbtrans
+        if(chs_2==2.or.chs_2==1)then
+        write(10000+i,'(9a)')'aprun -n ',adjustl(trim(i_chs_6)),&
+        ' -N ',adjustl(trim(i_chs_6_1)),' -j 1 ',&
+        '/work/app/SIESTA/current/Obj/siesta < ',&
+        ''//trim(filename1)//'_'//trim(adjustl(strain_chr_nam))//&
+        '.fdf',' > ',&
+        ''//trim(filename1)//'_'//trim(adjustl(strain_chr_nam))//&
+        '.out'
+        write(*,'(3a)') &
+          ' File : run_',trim(adjustl(strain_chr_nam)), &
+          '.sh created'
+        elseif(chs_2==3)then
+        write(10000+i,'(a)') 'ulimit -s unlimited'
+        write(10000+i,'(9a)')'mpirun -np ',trim(adjustl(i_chs_6)),&
+        ' -ppn ',adjustl(trim(i_chs_6_1)),&
+        ' -hostfile $PBS_NODEFILE ',&
+        '/usr/local/app/SIESTA/current/Obj/siesta < ',&
+        ''//trim(filename1)//'_'//trim(adjustl(strain_chr_nam))//&
+        '.fdf',' > ',&
+        ''//trim(filename1)//'_'//trim(adjustl(strain_chr_nam))//&
+        '.out'
+        write(*,'(3a)') &
+          ' File : run-gpu_',trim(adjustl(strain_chr_nam)), &
+          '.sh created'
+        endif
+        enddo
+
+        do i=1, num_fil
+        close(10000+i)
+        enddo
+
+        write(*,'(a)') ' File : SIESTA for strain *.sh created'
+        write(*,*)
+        write(*,'(a,i0)') ' Total files : ', num_fil
+        write(*,*)
+
+        elseif( strain_chs .eq. 2) then
+        ! no strain -> create run-vasp-gpu.sh current directory
         if(chs_2==2.or.chs_2==1)then
         write(40,'(9a)')'aprun -n ',adjustl(trim(i_chs_6)),&
-                ' -N ',adjustl(trim(i_chs_6_1)),' -j 1 ',&
+          ' -N ',adjustl(trim(i_chs_6_1)),' -j 1 ',&
         '/work/app/SIESTA/current/Obj/siesta < ',&
         ''//trim(filename1)//'.fdf',' > ',&
         ''//trim(filename1)//'.out'
-
         ! ------------------ for mpirun siesta -----------------
         elseif(chs_2==3)then
+        write(40,'(a)') 'ulimit -s unlimited'
         write(40,'(9a)')'mpirun -np ',adjustl(trim(i_chs_6)),&
-                ' -ppn ',adjustl(trim(i_chs_6_1)),&
-                ' -hostfile $PBS_NODEFILE ',&
+          ' -ppn ',adjustl(trim(i_chs_6_1)),&
+          ' -hostfile $PBS_NODEFILE ',&
         '/usr/local/app/SIESTA/current/Obj/siesta < ',&
         ''//trim(filename1)//'.fdf',' > ',&
         ''//trim(filename1)//'.out'
+        endif
+        endif
 
+        if( chs_2 .eq. 3) then
+          call execute_command_line(&
+            'cp strain_'//trim(adjustl(strain_chr_nam))//&
+            '/run-gpu_*.sh run-gpu.sh')
+        elseif( chs_2 .eq. 2 .or. chs_2 .eq. 1) then
+          call execute_command_line(&
+            'cp strain_'//trim(adjustl(strain_chr_nam))//&
+            '/run_*.sh run.sh')
         endif
 
         goto 1099

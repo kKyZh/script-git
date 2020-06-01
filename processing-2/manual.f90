@@ -34,7 +34,7 @@
            write(*,*)'    ==> Need in.min'
            write(*,*)'    ==> Create dump.GNR'
            write(*,*)
-           write(*,*)'5. getdumpf90'
+           write(*,*)'5. getdumpf90 (old) or lmpdum2posf90 (new)'
            write(*,*)'    ==> Need dump.GNR'
            write(*,*)'    ==> Create getdata.lammps'
            write(*,*)'    ==> Create position.fdf'
@@ -64,7 +64,7 @@
            write(*,*)'    ==> Need in.min'
            write(*,*)'    ==> Create dump.GNR'
            write(*,*)
-           write(*,*)'5. getdumpf90'
+           write(*,*)'5. getdumpf90 (old) or lmpdum2posf90 (new)'
            write(*,*)'    ==> Need dump.GNR'
            write(*,*)'    ==> Create getdata.lammps'
            write(*,*)'    ==> Create position.fdf'
@@ -126,6 +126,10 @@
            write(*,*)'1. crt4run_sh'
            write(*,*)
            write(*,*)'2. run'
+           write(*,*)
+           write(*,*)'------ Support VASP for GPU ------'
+           write(*,*)
+           write(*,*) 'position file transfer & strain'
            write(*,*)
            write(*,*)'#########################################'
 

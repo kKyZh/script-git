@@ -51,6 +51,7 @@
         !----------------------------------
         character(128) string ! userreadline
         integer check ! check for strain
+        integer chk_psf
         integer m
         integer strain_chs, strain_lo, strain_hi
         integer len_strain_nam, len_fra_strain_nam
@@ -60,13 +61,16 @@
         real strain_nam
         character(32) strain_chr_in, strain_chr_nam
         integer vasp_out
+        integer fix_species
+        real, allocatable :: z_lattice(:)
         !----------------------------------
 
         write(*,*)
-        write(*,'(1x,5a)')'Running... Creating *.fdf input file ',&
+        write(*,'(1x,6a)')'Running... Creating *.fdf input file ',&
           'for SIESTA/TranSIESTA... ',&
           'for INCAR (new added)... ',&
           '(Prepare *** POTCAR & KPOINTS *** HERE before INCAR) ',&
+          '(Prepare *** *.psf & getdata.lammps *** before strain) ',&
           '(Version --2.30 //May/6/2020//)'
         ! since KPOINTS and POTCAR always same and easy to create this
         ! time, just prepare them before the INCAR for strain.
@@ -274,6 +278,22 @@
         !######################################## applied strain
         ! lattice and filename and position in input file
 
+        ! if strain, getdata.lammps saved parameter
+        ! read first line of getdata.lammps
+        read(10,*) &
+          dummy, fix_species,&
+          strain_chs, num_fil, strain_lo, strain_hi,&
+          strain_in, len_strain_nam, len_fra_strain_nam,&
+          len_fra_percent
+        allocate(z_lattice(num_fil))
+        read(10,*) nutot_at ! total atom
+        do i = 1, 7 + nutot_at
+        read(10, '(a)') dummy
+        enddo
+        if( fix_species .eq. 2) then
+          read(10, *) dummy, (z_lattice(i), i = 1, num_fil)
+        endif
+        rewind(10)
         ! ############################## strain or not
 91      continue
         write(*,*)
@@ -284,26 +304,44 @@
         write(*,'(2a)') &
           'Check position files later!!!', &
           ' Uniaxial strain along Z axis for I-V !!!'
-        call userreadline( string, '(1. yes, 2. no) : ')
+        if( strain_chs .eq. 1) then
+          string = '1'
+        elseif( strain_chs .eq. 2) then
+          string = '2'
+        endif
+        !call userreadline( string, '(1. yes, 2. no) : ')
         read( string, *, iostat=check) strain_chs
         if( check .ne. 0) then
           goto 91
         elseif( strain_chs .eq. 1) then
           write(*,*)
           write(*,*) '1. yes, with strain'
+              write(*,*)
+              call execute_command_line(&
+                'ls *.psf >/dev/null 2>/dev/null', &
+                exitstat = chk_psf)
+            if(chk_psf .ne. 0) then
+              write(*,*) 'ERROR : Prepare *.psf before strain'
+              write(*,*)
+              goto 997
+            elseif(chk_psf .eq. 0) then
+              write(*,*) '*.psf will be copied to ./starin_*/'
+            endif
 199     continue
           write(*,*)
           write(*,*) 'Lowest strain (with %)'
-          call userreadline( string, '(Integer) : ')
-          read( string, *, iostat=check) strain_lo
+          !call userreadline( string, '(Integer) : ')
+          !read( string, *, iostat=check) strain_lo
+          check = 0
           if( check .ne. 0) goto 199
           if( strain_lo .lt. 0) goto 199
           !only positive value availiable this time
 198     continue
           write(*,*)
           write(*,*) 'Highest strain (with %)'
-          call userreadline( string, '(Integer) : ')
-          read( string, *, iostat=check) strain_hi
+          !call userreadline( string, '(Integer) : ')
+          !read( string, *, iostat=check) strain_hi
+          check = 0
           if( check .ne. 0) goto 198
           if( strain_hi .lt. strain_lo) goto 198
           if( (strain_hi / 100) .ge. 10) then
@@ -323,8 +361,9 @@
 197     continue
           write(*,*)
           write(*,*) 'Interval (with %)'
-          call userreadline( string, '(Decimal or Integer) : ')
-          read( string, *, iostat=check) strain_in
+          !call userreadline( string, '(Decimal or Integer) : ')
+          !read( string, *, iostat=check) strain_in
+          check = 0
           if( check .ne. 0) goto 197
           if( strain_in .gt. (strain_hi - strain_lo)) goto 197
           ! find remainder manually, amod, dmod, mod not work well
@@ -390,11 +429,19 @@
           !############################## open write files
           open(50000+i, &
             file=&
-            ''//trim(filename)//&
+            './strain_'//trim(adjustl(strain_chr_nam))//&
+            '/'//trim(filename)//&
             '_'&
             //trim(adjustl(strain_chr_nam))//'.fdf',&
             status='unknown', &
             err=95, form='formatted', access='sequential') 
+
+        call execute_command_line(&
+          'cp *.psf ./strain_'&
+          //trim(adjustl(strain_chr_nam))//'/')
+        call execute_command_line(&
+          'cp getdata.lammps ./strain_'&
+          //trim(adjustl(strain_chr_nam))//'/')
 
           if(vasp_out .eq. 1) then
             open(80000+i, &
@@ -423,9 +470,17 @@
         strain_in = 0.0
         num_fil = 1
         strain_nam = (100 + strain_i) / 100.0
+        len_strain_nam = 4
+        len_fra_strain_nam = 2
+        write(strain_chr_nam, &
+          '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
 
         open(50000+i,&
-          file=''//trim(filename)//'.fdf', status='unknown', &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//&
+          '/'//trim(filename)//'_'&
+          //trim(adjustl(strain_chr_nam))//'.fdf',&
+          status='unknown', &
                 err=95, form='formatted', access='sequential') 
 
           if(vasp_out .eq. 1) then
@@ -435,6 +490,13 @@
               status='unknown', &
               err=94, form='formatted', access='sequential')
           endif
+
+        call execute_command_line(&
+          'cp *.psf ./strain_'&
+          //trim(adjustl(strain_chr_nam))//'/')
+        call execute_command_line(&
+          'cp getdata.lammps ./strain_'&
+          //trim(adjustl(strain_chr_nam))//'/')
 
         write(*,*)
         write(*,*) 'Total files : ', num_fil
@@ -519,6 +581,7 @@
           endif
           endif
 
+        write(*,*) '*********************************************'
         do i=1,re_nutot_sp
 1001    continue
         write(*,*)
@@ -534,6 +597,7 @@
         enddo
         else
 
+        write(*,*) '*********************************************'
         do i=1,nutot_sp
 1011    continue
         write(*,*)
@@ -873,9 +937,15 @@
         enddo
         ! #################### uniaxial strain along Z axis for I-V
         !((trim(tab),(trim(adjustl(i_cell(i))))),i=1,3),& <- stupid!!!
+        if( fix_species .eq. 2) then
+        write(50000+m,'(3(1x, f11.6), 3(1x, a))')&
+          cell(1), cell(2), z_lattice(m), &
+          (trim(adjustl(rp_vl(i))),i=1,3)
+        else
         write(50000+m,'(3(1x, f11.6), 3(1x, a))')&
           cell(1), cell(2), cell(3)*strain_nam, &
           (trim(adjustl(rp_vl(i))),i=1,3)
+        endif
         ! #################### uniaxial strain along Z axis for I-V
         write(50000+m,'(a)')'%endblock LatticeParameters'
         write(50000+m,*)
@@ -1183,6 +1253,29 @@
         if(chs_t==1)then
         write(*,*)
         write(*,*)'-------- For SIESTA --------'
+        if( strain_chs .eq. 1) then
+        call execute_command_line(&
+          'cp strain_'//trim(adjustl(strain_chr_nam))//&
+          '/'//trim(filename)//'_'&
+          //trim(adjustl(strain_chr_nam))//&
+          '.fdf '//trim(filename)//'.fdf')
+        if( vasp_out .eq. 1) then
+        call execute_command_line(&
+          'cp ./strain_'//trim(adjustl(strain_chr_nam))//&
+          '/INCAR INCAR') 
+        endif
+        elseif( strain_chs .eq. 2) then
+        call execute_command_line(&
+          'cp ./strain_'//trim(adjustl(strain_chr_nam))//&
+          '/'//trim(filename)//'_'&
+          //trim(adjustl(strain_chr_nam))//&
+          '.fdf '//trim(filename)//'.fdf')
+        if( vasp_out .eq. 1) then
+        call execute_command_line(&
+          'cp ./strain_'//trim(adjustl(strain_chr_nam))//&
+          '/INCAR INCAR') 
+        endif
+        endif
         write(*,*)
         elseif(chs_t==2)then
         write(*,*)
@@ -1235,6 +1328,7 @@
         deallocate(l)
         deallocate(nu_lb)
         deallocate(i_nu_lb)
+        deallocate(z_lattice)
 
 2000    continue
 3002    continue

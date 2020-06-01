@@ -43,6 +43,7 @@
         character(128) dummy ! read file
         logical chk_filex ! check file exist or not
         logical fnd_co ! found the # symbol
+        character(128) string ! C interoperate
 
         write(*,*)
         write(*,'(1x,3a)')'Running... sum the value of LDOS, ',&
@@ -59,15 +60,14 @@
         write(*,*)'(4) Dimer lines;'
         write(*,*)'(5) Honeycomb lines (Confirm structure before use);'
         write(*,*)'(Q) Quit;'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_chotyp)char_chotyp
+        call userreadline( string, '(Enter type) : ')
+        read( string,*,iostat=chk_chotyp)char_chotyp
 
         if(chk_chotyp.ne.0)then
           goto 101
         else
 
         select case (char_chotyp)
-
         case('1')
           read(char_chotyp,*)chotyp
           write(*,*)
@@ -117,11 +117,9 @@
 102   continue
         write(*,*)
         write(*,*)'How many atom species do you have?'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_nuatspe)nuatspe
+        call userreadline( string, '(Integer number) : ')
+        read( string,*,iostat=chk_nuatspe)nuatspe
         if(chk_nuatspe.ne.0)then
-          write(*,*)
-          write(*,*)'Error : Need a number;'
           goto 102
         elseif(nuatspe.le.0)then
           write(*,*)
@@ -145,8 +143,8 @@
         write(*,*)
         write(*,'(1x,a,i0,a)')'Please enter NO.',i,&
           ' atom species (not *.dat file name)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_atspe)atspe(i)
+        call userreadline( string, '(Species) : ')
+        read( string,*,iostat=chk_atspe)atspe(i)
         if(chk_atspe.ne.0)then
           goto 1021
         else
@@ -179,9 +177,10 @@
 
 1022    continue
         write(*,*)
-        write(*,*)'Are you sure to continue? (Y/N)'
+        write(*,*)'Are you sure to continue?'
         write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_contin)contin
+        call userreadline( string, '(Y/N) : ')
+        read( string,*,iostat=chk_contin)contin
         if(chk_contin.ne.0)then
           goto 1022
         else
@@ -261,11 +260,9 @@
 103   continue
         write(*,*)
         write(*,*)'How many atoms do you have?'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_nuatspe)nuatspe
+        call userreadline( string, '(Integer) : ')
+        read( string,*,iostat=chk_nuatspe)nuatspe
         if(chk_nuatspe.ne.0)then
-          write(*,*)
-          write(*,*)'Error : Need a number;'
           goto 103
         elseif(nuatspe.le.0)then
           write(*,*)
@@ -290,8 +287,8 @@
         write(*,*)
         write(*,'(1x,a,i0,a)')'Please enter NO.',i,&
           ' atom number (not *.dat file name)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_atspe)atspe(i)
+        call userreadline( string, '(number) : ')
+        read( string,*,iostat=chk_atspe)atspe(i)
         if(chk_atspe.ne.0)then
           goto 1031
         else
@@ -323,9 +320,9 @@
 
 1032    continue
         write(*,*)
-        write(*,*)'Are you sure to continue? (Y/N)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_contin)contin
+        write(*,*)'Are you sure to continue?'
+        call userreadline( string, '(Y/N) : ')
+        read( string,*,iostat=chk_contin)contin
         if(chk_contin.ne.0)then
           goto 1032
         else
@@ -410,11 +407,9 @@
         write(*,*)
         write(*,*)'Please enter the minimum atom number'
         write(*,*)'(Decimal number will be ignored)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_minatnu)minatnu
+        call userreadline( string, '(Integer) : ')
+        read( string,*,iostat=chk_minatnu)minatnu
         if(chk_minatnu.ne.0)then
-          write(*,*)
-          write(*,*)'Error : Need an integer, try again;'
           goto 104
         elseif(minatnu.le.0)then
           write(*,*)
@@ -427,11 +422,9 @@
         write(*,*)
         write(*,*)'Please enter the maximum atom number'
         write(*,*)'(Decimal number will be ignored)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_maxatnu)maxatnu
+        call userreadline( string, '(Integer) : ')
+        read( string,*,iostat=chk_maxatnu)maxatnu
         if(chk_maxatnu.ne.0)then
-          write(*,*)
-          write(*,*)'Error : Need an integer, try again;'
           goto 1041
         elseif(maxatnu.lt.minatnu)then
           write(*,*)
@@ -449,11 +442,9 @@
         write(*,*)
         write(*,*)'Please enter the interval'
         write(*,*)'(Decimal number will be ignored)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_intvl)intvl
+        call userreadline( string, '(Integer) : ')
+        read( string,*,iostat=chk_intvl)intvl
         if(chk_intvl.ne.0)then
-          write(*,*)
-          write(*,*)'Error : Need an integer, try again;'
           goto 1042
         elseif(intvl.le.0.or.intvl.gt.rang)then
           write(*,*)
@@ -525,9 +516,9 @@
 
 1044    continue
         write(*,*)
-        write(*,*)'Are you sure to continue? (Y/N)'
-        write(*,'(1x,a)',advance='no')'==>   '
-        read(*,*,iostat=chk_contin)contin
+        write(*,*)'Are you sure to continue?'
+        call userreadline( string, '(Y/N) : ')
+        read( string,*,iostat=chk_contin)contin
         if(chk_contin.ne.0)then
           goto 1044
         else

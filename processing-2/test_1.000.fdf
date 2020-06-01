@@ -1,0 +1,119 @@
+############# Initial definitions ###########
+SystemLabel		test_1.000
+NumberOfAtoms		1408
+NumberOfSpecies		3
+ 
+%block ChemicalSpeciesLabel
+	1	6	Cwid
+	2	1	H
+	3	6	Cnar
+%endblock ChemicalSpeciesLabel
+ 
+####### Pseudo-Atomic Orbitals (PAO's)#######
+PAO.BasisSize		DZP
+NetCharge		0.000000
+ 
+################ Coordinates #######
+AtomicCoordinatesFormat	Ang
+AtomicCoordinatesAndAtomicSpecies <	position_1.000.fdf
+ 
+##### Structural (lattace) information #####
+LatticeConstant	1.0	Ang
+%block LatticeParameters
+	10.000000	70.000000	127.825302	90.00000	90.00000	90.00000
+%endblock LatticeParameters
+ 
+######## k-points for sampling #########
+ 
+%block kgrid_Monkhorst_Pack
+   1   0   0 0.5
+   0   1   0 0.5
+   0   0   1 0.5
+%endblock kgrid_Monkhorst_Pack
+ 
+### Exchange Correlation (XC) functionals ###
+XC.functional	GGA
+XC.authors	PBE
+SpinPolarized	F
+MeshCutoff	350.0 Ry
+MaxSCFIterations	250
+  
+########## Density Matrix (DM) ##########
+DM.MixingWeight	0.02
+DM.Tolerance	0.001
+DM.NumberPulay	3
+DM.RequireEnergyConvergence	T
+DM.EnergyTolerance	0.001 eV
+  
+##### Solution Method for Eigenvalues #####
+SolutionMethod	diagon
+Diag.DivideAndConquer	T
+Diag.ParallelOverK	F
+ 
+##### Occupation of Electronic States #####
+ElectronicTemperature	450.0 K
+ 
+####### Molecular Dynamics (MD) ########
+MD.TypeOfRun	CG
+MD.NumCGsteps	0
+MD.VariableCell	T
+MD.ConstantVolume	F
+MD.MaxForceTol	0.04 eV/Ang
+MD.MaxCGDispl	0.2 Bohr
+ 
+####### BandLinesScale ########
+BandLinesScale	ReciprocalLatticeVectors
+ 
+%block BandLines
+1	0.000000	0.000000	0.000000	\Gamma
+4	0.000000	0.000000	0.500000	
+%endblock BandLines
+ 
+##### Output of Selected Wavefunctions ######
+WaveFuncKPointsScale	pi/a
+%block WaveFuncKPoints
+ 0.000 0.000 0.000  2590  2591  2592  2593  2594  2595  2596  2597  2598  2599
+%endblock WaveFuncKPoints
+ 
+####### fullbz.wfsx energy selection ########
+WFS.WriteForBands T
+WFS.EnergyMin     -7.00 eV
+WFS.EnergyMax     0.00  eV
+ 
+##### fullbz.wfsx .band.wfsx. band index selection ########
+WFS.BandMin	2590
+WFS.BandMax	2599
+ 
+####### Density of States (DOS) ########
+%block ProjectedDensityOfStates
+-7.00	0.00	0.02	3000	eV
+%endblock ProjectedDensityOfStates
+ 
+####### Local Density of States (LDOS) ########
+%block LocalDensityOfStates
+-7.00	0.00	eV
+%endblock LocalDensityOfStates
+ 
+####### Output options ########
+WriteCoorStep	T
+WriteForces	T
+WriteKpoints	T
+WriteCoorXmol	T
+WriteCoorInitial	T
+WriteEigenvalues	T
+WriteDM	T
+WriteBands	T
+WriteKbands	T
+WriteWaveFunctions	T
+WriteCoorCerius	T
+WriteMDXmol	T
+WriteMDhistory	T
+WriteDenchar	T
+COOP.Write	T
+WriteMullikenPop	1
+ 
+####### Save options ########
+DM.UseSaveDM	T
+MD.UseSaveCG	T
+MD.UseSaveXV	T
+ 

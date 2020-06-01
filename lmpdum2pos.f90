@@ -94,6 +94,9 @@
         integer z_l
         integer z_po_l
         !----------------------------------
+        real, allocatable :: z_lattice(:)
+        real zhi_check
+        !----------------------------------
 
         write(*,*)
         write(*,'(1x,2a)') &
@@ -168,7 +171,7 @@
         ' (or "0" to run Lammps2fdf directly, "-1" to quit the job,',&
         ' "-2" to sort Z axis for Transiesta,',&
         ' "-3" to change species number)' 
-
+        write(*,'(a)') 'Usually "5" -> Atoms ID, type, X,Y,Z ;'
         call userreadline( string, '(Integer) : ' )
         read (string,*,iostat=check)order
 !----- need to be changed use ascii for recognize characters
@@ -241,8 +244,9 @@
         ! strain with each line
 91      continue
         write(*,*)
-        write(*,'(4a)') 'Do you need strain?', &
-          ' (position.fdf -> position_*.fdf) (* strain without %)', &
+        write(*,'(5a)') 'Do you need strain?', &
+          ' (position.fdf -> ./strain_*/position_*.fdf)',&
+          ' (* strain without %)', &
           ' (POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)', &
           ' (Uniaxial strain along Z axis for I-V calculation)'
         call userreadline( string, '(1. yes, 2. no) : ')
@@ -346,7 +350,8 @@
           !############################## open write files
           open(50000+i, &
             file=&
-            'position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
+            './strain_'//trim(adjustl(strain_chr_nam))//&
+            '/position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
             status='unknown', &
             err=95, form='formatted', access='sequential') 
 
@@ -371,11 +376,13 @@
           write(*,*) '2. No, without strain'
           ! ### no strain -> only one file
           i = 1
-        open(50000+i,file='position.fdf', status='unknown', &
+        open(50000+i,file=&
+          './strain_1.00/position_1.00.fdf', status='unknown', &
                 err=95, form='formatted', access='sequential') 
 
         if(vasp_out .eq. 1) then
-        open(80000+i,file='POSCAR', status='unknown', &
+        open(80000+i,file=&
+          './strain_1.00/POSCAR', status='unknown', &
           err=94, form='formatted', access='sequential')
         endif
 
@@ -385,6 +392,11 @@
         strain_in = 0.0
         num_fil = 1
         strain_nam = (100 + strain_i) / 100.0
+        len_strain_nam = 4
+        len_fra_strain_nam = 2
+        len_fra_percent = 0
+        write(strain_chr_nam, &
+          '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
 
         ! ### not strain or no strain
         else
@@ -447,6 +459,7 @@
           posz2(num,getdata_num))
         allocate(character(32)::name_ele(maxid)) 
         allocate(vasp_ele(maxid)) 
+        allocate(z_lattice(num_fil))
                 
         ! choose getdata_num and read
         do k = 1, getdata_num
@@ -579,22 +592,7 @@
         endif
         enddo
 
-        ! ######################### write getdata.lammps head #####
-          write(40,*)'# Position data (not sorted)'
-          write(40,'(i0,1x,a)')num,'atoms'
-          write(40,'(i0,1x,a,3(1x,i0))')maxid, 'atom types',&
-            (num_ele(j),j=1,maxid)
-          write(40,'(2(1x,f11.6),1x,a)')&
-            cell_lo(nx,getdata_num), cell_hi(nx,getdata_num),'xlo xhi'
-          write(40,'(2(1x,f11.6),1x,a)')&
-            cell_lo(ny,getdata_num), cell_hi(ny,getdata_num),'ylo yhi'
-          write(40,'(2(1x,f11.6),1x,a)')&
-            cell_lo(nz,getdata_num), cell_hi(nz,getdata_num),'zlo zhi'
-          write(40,*)
-          write(40,*)'Atoms'
-          write(40,*)
-
-        ! ######################### write getdata.lammps body #####
+        ! ######################### direct or cardinal position
         do i = 1, num
         if (format_co.eq.2) then
           posx2(i,getdata_num)=&
@@ -606,57 +604,14 @@
           posz2(i,getdata_num)=&
             val(nz,i,getdata_num)*cellz(getdata_num)+&
             cell_lo(nz,getdata_num)
-          write(40,'(1x,i7,1x,i2,3(1x,f11.6))')&
-          i, id(i), posx2(i,getdata_num),&
-          posy2(i,getdata_num),posz2(i,getdata_num)
         else if (format_co.eq.1) then
           posx2(i,getdata_num)= val(nx,i,getdata_num)
           posy2(i,getdata_num)= val(ny,i,getdata_num)
           posz2(i,getdata_num)= val(nz,i,getdata_num)
-          write(40,'(1x,i7,1x,i2,3(1x,f11.6))')&
-          i, id(i), posx2(i,getdata_num),&
-          posy2(i,getdata_num),posz2(i,getdata_num)
         endif
         enddo
-        ! ######################### finished write getdata.lammps ##
+        ! ######################### direct or cardinal position
 
-        !------------------------------ lowest and highest atoms
-        if( vasp_out .eq. 1) then
-          hi_z = 0
-          lo_z = posz2(1, getdata_num)
-          do i = 1, num
-          if( posz2(i, getdata_num) .gt. hi_z) then
-            hi_z = posz2(i, getdata_num)
-          endif
-          if( posz2(i, getdata_num) .lt. lo_z) then
-            lo_z = posz2(i, getdata_num)
-          endif
-          enddo
-        endif
-        !------------------------------ lowest and highest atoms
-
-200     continue
-
-        write(*,*)
-        write(*,*) 'Size of supercell'
-        write(*,'(a, 1x, f11.6)') 'x =', cellx(getdata_num)
-        write(*,'(a, 1x, f11.6)') 'y =', celly(getdata_num)
-        write(*,'(a, 1x, f11.6)') 'z =', cellz(getdata_num)
-        write(*,*)
-        write(*,'(1x,a,1x,i0)') 'Total steps in LAMMPS =', step
-        write(*,'(1x,a,1x,i0)') 'Number of data =',num_data
-        write(*,'(1x,a,1x,i0)') 'Number of obtained data =',getdata_num
-        write(*,*)
-        write(*,'(1x,a,1x,i0)') 'total number of atoms =', num
-        write(*,'(1x,a,1x,i0)') 'total types of atoms =',maxid
-        do i=1,maxid
-                write(*,'(1x,a,1x,i0,1x,a,1x,i0)')'type (',i,')&
-                        element', num_ele(i) 
-        enddo        
-              
-        write(*,*)
-        write(*,*)'file completed...'
-        write(*,*)'getdata.lammps created...'
         !###################################################
         ! new added to create POSCAR
         write(*,*)
@@ -790,6 +745,9 @@
         ! fix but with strain applied, or fix and without strain
         ! ex. wide part fix -> apply strain will not affect position of
         ! wide part
+        ! === new fixed wide part stran
+        fix_species = 0
+        ! === new fixed wide part stran
 
       if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
         write(*,*)
@@ -894,6 +852,13 @@
           else
             z_po_l = x_pos(3, i, x_id(i))
             z_l = l
+            ! here maybe system bug
+            ! without below line, 17112005 can not get z_l value
+            ! therefore, no z_narrow_hi
+            ! but 29112005 same condition -> works
+            ! very weird need below line
+            !write(*,*) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            ! up is only for 17112005, 29112005 works fine
           endif
           endif
         elseif(trim(adjustl(x_name_ele(i))) .ne. 'H') then
@@ -934,14 +899,92 @@
         enddo
         !z_narrow_hi = z_narrow_hi - 1.420272
         !z_narrow_lo = z_narrow_lo - 1.420272
-
-        !write(*,*) re_num_narrow, z_narrow_lo, re_num_wide, z_narrow_hi
+        write(*,*) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        write(*,*) re_num_narrow, z_narrow_lo, re_num_wide, z_narrow_hi
+        ! wired error, must have two blank lines, then 17112005 not okay
+            !write(*,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       endif
       endif
-
         ! ############################## fix select finished
         ! ##################################################
 
+        ! ######################### write getdata.lammps head #####
+        if( strain_chs .eq. 1) then
+          ! new add for strain, real no format, due to decimal after dot
+          write(40,'(a,1x,5(i0,1x),f,3(1x,i0),(a))') &
+          '#', fix_species, strain_chs, num_fil, strain_lo, strain_hi,&
+          strain_in, len_strain_nam, len_fra_strain_nam,&
+          len_fra_percent, ' w strain (not sorted)'
+        elseif( strain_chs .eq. 2) then
+          write(40,'(a,1x,4(i0,1x),f,3(1x,i0),(a))') &
+          '#', fix_species, strain_chs, num_fil, strain_lo, strain_hi,&
+          strain_in, len_strain_nam, len_fra_strain_nam,&
+          len_fra_percent, ' w/o strain (not sorted)'
+        endif
+          write(40,'(i0,1x,a)')num,'atoms'
+          write(40,'(i0,1x,a,3(1x,i0))')maxid, 'atom types',&
+            (num_ele(j),j=1,maxid)
+          write(40,'(2(1x,f11.6),1x,a)')&
+            cell_lo(nx,getdata_num), cell_hi(nx,getdata_num),'xlo xhi'
+          write(40,'(2(1x,f11.6),1x,a)')&
+            cell_lo(ny,getdata_num), cell_hi(ny,getdata_num),'ylo yhi'
+          write(40,'(2(1x,f11.6),1x,a)')&
+            cell_lo(nz,getdata_num), cell_hi(nz,getdata_num),'zlo zhi'
+          write(40,*)
+          write(40,*)'Atoms'
+          write(40,*)
+
+        ! ######################### write getdata.lammps body #####
+        do i = 1, num
+        if (format_co.eq.2) then
+          write(40,'(1x,i7,1x,i2,3(1x,f11.6))')&
+          i, id(i), posx2(i,getdata_num),&
+          posy2(i,getdata_num),posz2(i,getdata_num)
+        else if (format_co.eq.1) then
+          write(40,'(1x,i7,1x,i2,3(1x,f11.6))')&
+          i, id(i), posx2(i,getdata_num),&
+          posy2(i,getdata_num),posz2(i,getdata_num)
+        endif
+        enddo
+        ! ######################### finished write getdata.lammps ##
+
+        !------------------------------ lowest and highest atoms
+        if( vasp_out .eq. 1) then
+          hi_z = 0
+          lo_z = posz2(1, getdata_num)
+          do i = 1, num
+          if( posz2(i, getdata_num) .gt. hi_z) then
+            hi_z = posz2(i, getdata_num)
+          endif
+          if( posz2(i, getdata_num) .lt. lo_z) then
+            lo_z = posz2(i, getdata_num)
+          endif
+          enddo
+        endif
+        !------------------------------ lowest and highest atoms
+
+        write(*,*)
+        write(*,*) 'Size of supercell'
+        write(*,'(a, 1x, f11.6)') 'x =', cellx(getdata_num)
+        write(*,'(a, 1x, f11.6)') 'y =', celly(getdata_num)
+        write(*,'(a, 1x, f11.6)') 'z =', cellz(getdata_num)
+        write(*,*)
+        write(*,'(1x,a,1x,i0)') 'Total steps in LAMMPS =', step
+        write(*,'(1x,a,1x,i0)') 'Number of data =',num_data
+        write(*,'(1x,a,1x,i0)') 'Number of obtained data =',getdata_num
+        write(*,*)
+        write(*,'(1x,a,1x,i0)') 'total number of atoms =', num
+        write(*,'(1x,a,1x,i0)') 'total types of atoms =',maxid
+        do i=1,maxid
+                write(*,'(1x,a,1x,i0,1x,a,1x,i0)')'type (',i,')&
+                        element', num_ele(i) 
+        enddo        
+              
+        write(*,*)
+        write(*,*)'file completed...'
+        write(*,*)'getdata.lammps created...'
+
+        zhi_check = 0
         ! ############################## write files
         ! include strain or not strain with strain_nam as strain ratio
         strain_i = strain_lo
@@ -981,7 +1024,7 @@
         num_ele_hi = num_ele_hi + num_ele(j)
         do i = num_ele_low, num_ele_hi
           ! position.fdf
-      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+      if( fix_species .eq. 2) then
         ! new species fixed strain only narrow part
 
         if( posz2(i,getdata_num) .lt. z_narrow_lo) then
@@ -994,15 +1037,26 @@
           posx2(i,getdata_num), &
           posy2(i,getdata_num), &
           posz2(i,getdata_num)+&
-          (posz2(i,getdata_num)-z_narrow_lo+0.710136)*strain_nam, &
+          (posz2(i,getdata_num)-z_narrow_lo+0.710136)*&
+          (strain_nam-1.0), &
           id(i), name_ele(j)
         elseif( posz2(i,getdata_num) .gt. z_narrow_hi) then
           write(50000+m,'(3(1x,f11.6), 1x, i2, 1x, a<len_dump>)')&
           posx2(i,getdata_num), &
           posy2(i,getdata_num), &
           posz2(i,getdata_num)+&
-          (z_narrow_hi-z_narrow_lo+1.420272)*strain_nam, &
+          (z_narrow_hi-z_narrow_lo+1.420272)*(strain_nam-1.0), &
           id(i), name_ele(j)
+        ! === new add z_lattice
+        ! === check zhi_check is the largest
+        if( posz2(i,getdata_num) .gt. zhi_check) then
+          zhi_check = posz2(i,getdata_num)
+        endif
+        z_lattice(m) = &
+          zhi_check + 1.420272/2 + &
+          (z_narrow_hi-z_narrow_lo+1.420272)*(strain_nam-1.0)
+        ! === largest + local strain
+        ! === new add z_lattice
         endif
 
       else
@@ -1022,7 +1076,7 @@
 
             elseif( fix_type .eq. 2) then
               if( j .eq. sele_fix) then
-      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+      if( fix_species .eq. 2) then
         ! new species fixed strain only narrow part
         if( posz2(i,getdata_num) .lt. z_narrow_lo) then
           write(80000+m,'(3(1x,f11.6),3(1x,a), 2a)') &
@@ -1036,7 +1090,8 @@
           posx2(i,getdata_num), &
           posy2(i,getdata_num), &
           posz2(i,getdata_num)+&
-          (posz2(i,getdata_num)-z_narrow_lo+0.710136)*strain_nam, &
+          (posz2(i,getdata_num)-z_narrow_lo+0.710136)*&
+          (strain_nam-1.0), &
           fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
         elseif( posz2(i,getdata_num) .gt. z_narrow_hi) then
@@ -1044,7 +1099,7 @@
           posx2(i,getdata_num), &
           posy2(i,getdata_num), &
           posz2(i,getdata_num)+&
-          (z_narrow_hi-z_narrow_lo+1.420272)*strain_nam, &
+         (z_narrow_hi-z_narrow_lo+1.420272)*(strain_nam-1.0), &
           fix_x, fix_y, fix_z, &
           ' # ', trim(adjustl(vasp_ele(j)))
         endif
@@ -1105,23 +1160,112 @@
         close(50000+m)
         enddo
 
+        ! write getdata.lammps bottom line for later use
+        ! z_lattice for fix_species 2, only wide fixed with no strain
+        if( fix_species .eq. 2) then
+        write(40, '(a,<num_fil>(1x,f11.6))') '#',&
+          (z_lattice(m), m = 1, num_fil)
+        ! z_lattice for fix_species 2, only wide fixed with no strain
+        ! write getdata.lammps bottom line for later use
+
+        ! use template file to rewrite POSCAR with correct Z lattice
+        if( strain_chs .eq. 1) then
+        if(vasp_out .eq. 1) then
+          i = 0
+          do strain_i = strain_lo, strain_hi, strain_in
+          i = i + 1
+          strain_nam = (100 + strain_i) / 100.0
+          write(strain_chr_nam, &
+            '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
+          open(80000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR',&
+          status='old', &
+          err=94, form='formatted', access='sequential') 
+          open(20000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR.tmp',&
+          status='unknown', &
+          err=94, form='formatted', access='sequential') 
+          enddo
+        endif
+        elseif( strain_chs .eq. 2) then
+        if(vasp_out .eq. 1) then
+          i = 1
+          open(80000+i,file=&
+          './strain_1.00/POSCAR', status='old', &
+          err=94, form='formatted', access='sequential')
+          open(20000+i,file=&
+          './strain_1.00/POSCAR.tmp', status='unknown', &
+          err=94, form='formatted', access='sequential')
+        endif
+        endif
+        ! use template file to rewrite POSCAR with correct Z lattice
+
+        ! === read & write ===
+        do i = 1, num_fil
+        do j = 1, 4
+        read(80000+i, '(a)') dummy
+        write(20000+i, '(a)') trim(dummy)
+        enddo
+        ! the changed line for z_lattice
+        read(80000+i, '(a)') dummy
+        write(20000+i, '(3(1x,f11.6))') &
+          real_zero, real_zero, z_lattice(i)
+        ! the changed line for z_lattice
+        ! add spaces and line
+        do j = 1, num + 4
+        read(80000+i, '(a)') dummy
+        write(20000+i, '(a)') trim(dummy)
+        enddo
+        close(80000+i)
+        close(20000+i)
+        enddo
+        ! copy POSCAR.tmp to POSCAR
+          i = 0
+          do strain_i = strain_lo, strain_hi, strain_in
+          i = i + 1
+          strain_nam = (100 + strain_i) / 100.0
+          write(strain_chr_nam, &
+            '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
+          status = rename(&
+          './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR.tmp',&
+          './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR')
+          enddo
+        endif
+
         write(*,*)
         write(*,*)'Outputing completed'
+        write(*,*)
 
-        if( strain_chs .eq. 2) then
+        if( strain_chs .eq. 1) then
+        call execute_command_line(&
+          'cp strain_1.00/position_1.00.fdf position.fdf')
+        write(*,*)'strain_*/position_*.fdf created...'
         write(*,*)'position.fdf created...'
         if(vasp_out .eq. 1) then
+        call execute_command_line(&
+          'cp strain_1.00/POSCAR POSCAR')
+          write(*,*) 'strain_*/POSCAR with strain created...'
           write(*,*) 'POSCAR created...'
         endif
-        elseif( strain_chs .eq. 1) then
-        write(*,*)'position_*.fdf with strain created...'
+        elseif( strain_chs .eq. 2) then
+        call execute_command_line(&
+          'cp strain_1.00/position_1.00.fdf position.fdf')
+        write(*,*)'position.fdf created...'
         if(vasp_out .eq. 1) then
-          write(*,*) './strain_*/POSCAR with strain created...'
+        call execute_command_line(&
+          'cp strain_1.00/POSCAR POSCAR')
+          write(*,*) 'POSCAR created...'
         endif
         endif
 
         write(*,*)
+        write(*,*) 'Please check ./position.fdf created or not...'
+        write(*,*) 'Currently, ./position.fdf is for crtfil4trasief90'
+        write(*,*)
         
+        deallocate(z_lattice)
         deallocate(id)
         deallocate(num_ele)
         deallocate(val) 
@@ -1131,7 +1275,7 @@
         deallocate(name_ele)
         deallocate(vasp_ele)
 
-      if( fix_type .eq. 2 .and. strain_chs .eq. 1) then
+      if( fix_species .eq. 2) then
         deallocate(tmp_name_ele)
         deallocate(x_pos)
         deallocate(x_id)

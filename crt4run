@@ -7,7 +7,7 @@ echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
     echo '(1) SIESTA and TranSIESTA;'
     echo '(2) TBTrans (Individually);'
     echo '(3) LAMMPS;'
-    echo '(4) SIESTA (Individually);'
+    echo '(4) SIESTA with / without strain (Individually);'
     echo '(5) TranSIESTA (Individually);'
     echo '(6) Denchar;'
     echo '(7) VASP for GPU;'
@@ -33,7 +33,7 @@ echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
           ;;
         4)
           echo
-          echo 'You choose (4) SIESTA (Individually);'
+          echo 'You choose (4) SIESTA with / without strain (Individually);'
           break 1
           ;;
         5)
@@ -63,7 +63,7 @@ echo '(1.Include crt4run_shf90 program; 2.Include xyz2fdff90 for TranSIESTA)'
           echo '(1) SIESTA and TranSIESTA;'
           echo '(2) TBTrans (Individually);'
           echo '(3) LAMMPS;'
-          echo '(4) SIESTA (Individually);'
+          echo '(4) SIESTA with / without strain (Individually);'
           echo '(5) TranSIESTA (Individually);'
           echo '(6) Denchar;'
           echo '(7) VASP for GPU;'
@@ -583,7 +583,7 @@ nu_fil2=`ls -f in.* 2>/dev/null | wc -l` #hide the error of no .car file
   elif [[ $chs_type -eq 4 ]]; then
 #-------------------------------------------------------------------
 echo
-echo 'Checking .fdf file...'
+echo 'Checking *.fdf file... as template here'
 nu_fil2=`ls -f *.fdf 2>/dev/null | wc -l` #hide the error of no .car file
 
 	if [[ $nu_fil2 -eq 0 ]]; then
@@ -798,7 +798,7 @@ nu_fil2=`ls -f denchar.fdf 2>/dev/null | wc -l` #hide the error of no .car file
 
   fi
 
-############################## (6) denchar #################################
+############################## (7) vasp for gpu #################################
   elif [[ $chs_type -eq 7 ]]; then
 #-------------------------------------------------------------------
 echo
