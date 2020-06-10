@@ -97,15 +97,20 @@
         real, allocatable :: z_lattice(:)
         real zhi_check
         !----------------------------------
+        integer chs_siesta, chk_siesta
+        logical chk_filex
+        !----------------------------------
 
         write(*,*)
         write(*,'(1x,2a)') &
           'Running... getdump file from ## dump.GNR ##... ',&
-                '(Version --3.1 beta//Apr/17/2020//)'
+                '(Version --3.20 beta//June/7/2020//)'
         write(*,*)
         write(*,*)'Include manual option: -h '
         write(*,*)'By using ==> car2Lammps -h '
         write(*,*)'To see how to use it...'
+        write(*,*)
+        write(*,*) 'copy dump.GNR -> s_, tse_, tss_, dump.GNR'
 
         ! ###### help options ######
 
@@ -145,19 +150,75 @@
 
         ! ###### help options finished ######
         ! ###### check variable has .car ######
-
+2000  continue
+      write(*,*)
+      write(*,*) 'Please choose for ->'
+      write(*,*) '(1) SIESTA s_*'
+      write(*,*) '(2) Transiesta tse_*'
+      write(*,*) '(3) Transiesta tss_*'
+      write(*,*) '(Q) quit...*'
+      call userreadline( string, '(1, 2, 3) : ')
+      if ( string .eq. 'q' .or. string .eq. 'Q') goto 99
+      read( string, *, iostat=chk_siesta) chs_siesta
+      if( chk_siesta .ne. 0) goto 2000
+      if( chs_siesta .eq. 1) then ! siesta s_
         do i=1,narg
         call get_command_argument(i,chk_filename)
         !lchk=len_trim(chk_filename)
         ! keep for future upgrade
-        if(chk_filename=='dump.GNR')then
+        ! #################### dump.GNR & getdata.lammps here
+        ! #################### position.fdf and POSCAR are later
+        if(chk_filename=='s_dump.GNR')then
           filename=chk_filename
+        open(10,file=filename, status='old',&
+                err=98, form='formatted', access='sequential')
+        open(40,file='s_getdata.lammps', status='unknown', &
+                err=96, form='formatted', access='sequential') 
           goto 49
         else
-          goto 98
+          write(*,*)
+          write(*,*) 'ERROR : missing s_dump.GNR'
+          write(*,*) 'Please copy dump.GNR to s_dump.GNR'
+          write(*,*)
+          goto 99 ! quit directly
         endif
         enddo
-
+      elseif( chs_siesta .eq. 2) then ! transiesta tse_
+        inquire( file='s_dump.GNR', exist=chk_filex)
+        if(chk_filex) then
+          write(*,*)
+          write(*,*) 'Warning : s_dump.GNR exists'
+          write(*,*) 'Please choose another folder to use tse_dump.GNR'
+          write(*,*)
+          goto 99 ! quit directly
+        endif
+        do i=1,narg
+        call get_command_argument(i,chk_filename)
+        if(chk_filename=='tse_dump.GNR')then
+          filename=chk_filename
+        open(10,file=filename, status='old',&
+                err=98, form='formatted', access='sequential')
+        open(40,file='tse_getdata.lammps', status='unknown', &
+                err=96, form='formatted', access='sequential') 
+          goto 49
+        else
+          write(*,*)
+          write(*,*) 'ERROR : missing tse_dump.GNR'
+          write(*,*) 'Please copy dump.GNR to tse_dump.GNR'
+          write(*,*)
+          goto 99 ! quit directly
+        endif
+        enddo
+      elseif( chs_siesta .eq. 3) then ! transiesta tss_
+        write(*,*)
+        write(*,*) 'If have MS .cif to tss_dump.GNR -> '
+        write(*,*) 'Modify this script.'
+        write(*,*) 'Please run crtfil4trasief90 directly for tss_ run'
+        write(*,*) 'merge and rename will be run in crtfil4trasiesf90'
+        write(*,*) 'Please prepare s_ & tse_ position & getdata.lammps'
+        write(*,*)
+        goto 99 ! quit directly
+      endif
         ! ###### check variable has .car finished ###### ???
 
         renum = 0
@@ -221,8 +282,13 @@
 
         ! ############################## output POSCAR or not
         write(*,*)
+        write(*,*) 'Only siesta -> s_* has POSCAR option'
         write(*,*) 'Do you need VASP POSCAR file?'
-        call userreadline( string, '([1] yes, [2] no) : ')
+        if( chs_siesta .eq. 1) then
+          call userreadline( string, '([1] yes, [2] no) : ')
+        elseif( chs_siesta .eq. 2 .or. chs_siesta .eq. 3) then
+          string = '2'
+        endif
         read( string, *, iostat=check) vasp_out
         if(check .ne. 0) then
           goto 97
@@ -231,17 +297,11 @@
         endif
         ! ##################### output POSCAR or not select finished
 
-        open(10,file=filename, status='old',&
-                err=98, form='formatted', access='sequential')
-        open(40,file='getdata.lammps', status='unknown', &
-                err=96, form='formatted', access='sequential') 
-        ! #################### dump.GNR & getdata.lammps here
-        ! #################### position.fdf and POSCAR are later
-
         ! ############################## strain or not
         ! strain and fix one specie -> specific fix wide part
         ! only narrow part strained
         ! strain with each line
+        ! tse_ tss_ no strain this time
 91      continue
         write(*,*)
         write(*,'(5a)') 'Do you need strain?', &
@@ -249,7 +309,11 @@
           ' (* strain without %)', &
           ' (POSCAR -> mkdir strain_* -> ./strain_*/POSCAR)', &
           ' (Uniaxial strain along Z axis for I-V calculation)'
-        call userreadline( string, '(1. yes, 2. no) : ')
+        if( chs_siesta .eq. 1) then
+          call userreadline( string, '(1. yes, 2. no) : ')
+        elseif( chs_siesta .eq. 2 .or. chs_siesta .eq. 3) then
+          string = '2'
+        endif
         read( string, *, iostat=check) strain_chs
         if( check .ne. 0) then
           goto 91
@@ -347,24 +411,58 @@
               ' not created'
           endif
 
-          !############################## open write files
-          open(50000+i, &
-            file=&
-            './strain_'//trim(adjustl(strain_chr_nam))//&
-            '/position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
-            status='unknown', &
-            err=95, form='formatted', access='sequential') 
+      !############################## open write files
+      !############################## keep POSCAR for all, use later
+      if( chs_siesta .eq. 1) then ! siesta s_
+        open(50000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//&
+          '/s_position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
+          status='unknown', &
+          err=95, form='formatted', access='sequential') 
 
-          if(vasp_out .eq. 1) then
-            open(80000+i, &
-              file=&
-              './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR',&
-              status='unknown', &
-              err=94, form='formatted', access='sequential') 
-          endif
+        if(vasp_out .eq. 1) then
+          open(80000+i, &
+            file=&
+            './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR',&
+            status='unknown', &
+            err=94, form='formatted', access='sequential') 
+        endif
+      elseif( chs_siesta .eq. 2) then ! transiesta tse_
+        open(50000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//&
+          '/tse_position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
+          status='unknown', &
+          err=95, form='formatted', access='sequential') 
+
+        if(vasp_out .eq. 1) then
+          open(80000+i, &
+            file=&
+            './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR',&
+            status='unknown', &
+            err=94, form='formatted', access='sequential') 
+        endif
+      elseif( chs_siesta .eq. 3) then ! transiesta tss_ in /strain/tb
+        open(50000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//&
+          '/tb/tss_position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
+          status='unknown', &
+          err=95, form='formatted', access='sequential') 
+
+        if(vasp_out .eq. 1) then
+          open(80000+i, &
+            file=&
+            './strain_'//trim(adjustl(strain_chr_nam))//'/tb/POSCAR',&
+            status='unknown', &
+            err=94, form='formatted', access='sequential') 
+        endif
+      endif
 
           enddo
-          !############################## open write files
+      !############################## open write files
+      !############################## keep POSCAR for all, use later
 
           ! real can not add leading 0 but integer can
           ! do tricks from character for leading 0 real format
@@ -376,8 +474,9 @@
           write(*,*) '2. No, without strain'
           ! ### no strain -> only one file
           i = 1
+      if( chs_siesta .eq. 1) then ! s_ no strain
         open(50000+i,file=&
-          './strain_1.00/position_1.00.fdf', status='unknown', &
+          './strain_1.00/s_position_1.00.fdf', status='unknown', &
                 err=95, form='formatted', access='sequential') 
 
         if(vasp_out .eq. 1) then
@@ -385,6 +484,27 @@
           './strain_1.00/POSCAR', status='unknown', &
           err=94, form='formatted', access='sequential')
         endif
+      elseif( chs_siesta .eq. 2) then ! tse_ no strain
+        open(50000+i,file=&
+          './strain_1.00/tse_position_1.00.fdf', status='unknown', &
+                err=95, form='formatted', access='sequential') 
+
+        if(vasp_out .eq. 1) then
+        open(80000+i,file=&
+          './strain_1.00/POSCAR', status='unknown', &
+          err=94, form='formatted', access='sequential')
+        endif
+      elseif( chs_siesta .eq. 3) then ! tss_ no strain in tb dir
+        open(50000+i,file=&
+          './strain_1.00/tb/tss_position_1.00.fdf', status='unknown', &
+                err=95, form='formatted', access='sequential') 
+
+        if(vasp_out .eq. 1) then
+        open(80000+i,file=&
+          './strain_1.00/tb/POSCAR', status='unknown', &
+          err=94, form='formatted', access='sequential')
+        endif
+      endif
 
         strain_i = 0.0
         strain_lo = 0.0
@@ -916,7 +1036,7 @@
           strain_in, len_strain_nam, len_fra_strain_nam,&
           len_fra_percent, ' w strain (not sorted)'
         elseif( strain_chs .eq. 2) then
-          write(40,'(a,1x,4(i0,1x),f,3(1x,i0),(a))') &
+          write(40,'(a,1x,5(i0,1x),f,3(1x,i0),(a))') &
           '#', fix_species, strain_chs, num_fil, strain_lo, strain_hi,&
           strain_in, len_strain_nam, len_fra_strain_nam,&
           len_fra_percent, ' w/o strain (not sorted)'
@@ -1177,6 +1297,18 @@
           strain_nam = (100 + strain_i) / 100.0
           write(strain_chr_nam, &
             '(f<len_strain_nam>.<len_fra_strain_nam>)') strain_nam
+        if( chs_siesta .eq. 3) then ! tss_ in tb dir
+          open(80000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//'/tb/POSCAR',&
+          status='old', &
+          err=94, form='formatted', access='sequential') 
+          open(20000+i, &
+          file=&
+          './strain_'//trim(adjustl(strain_chr_nam))//'/tb/POSCAR.tmp',&
+          status='unknown', &
+          err=94, form='formatted', access='sequential') 
+        else
           open(80000+i, &
           file=&
           './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR',&
@@ -1187,17 +1319,27 @@
           './strain_'//trim(adjustl(strain_chr_nam))//'/POSCAR.tmp',&
           status='unknown', &
           err=94, form='formatted', access='sequential') 
+        endif
           enddo
         endif
         elseif( strain_chs .eq. 2) then
         if(vasp_out .eq. 1) then
           i = 1
+        if( chs_siesta .eq. 3) then ! tss_ in tb dir
+          open(80000+i,file=&
+          './strain_1.00/tb/POSCAR', status='old', &
+          err=94, form='formatted', access='sequential')
+          open(20000+i,file=&
+          './strain_1.00/tb/POSCAR.tmp', status='unknown', &
+          err=94, form='formatted', access='sequential')
+        else
           open(80000+i,file=&
           './strain_1.00/POSCAR', status='old', &
           err=94, form='formatted', access='sequential')
           open(20000+i,file=&
           './strain_1.00/POSCAR.tmp', status='unknown', &
           err=94, form='formatted', access='sequential')
+        endif
         endif
         endif
         ! use template file to rewrite POSCAR with correct Z lattice
@@ -1238,17 +1380,45 @@
         write(*,*)'Outputing completed'
         write(*,*)
 
+        if( chs_siesta .eq. 3) then
+          write(*,*)
+          write(*,*) 'all files created in */tb/ '
+        endif
         if( strain_chs .eq. 1) then
+          if( chs_siesta .eq. 1) then ! s_*
         call execute_command_line(&
-          'cp strain_1.00/position_1.00.fdf position.fdf')
-        write(*,*)'strain_*/position_*.fdf created...'
-        write(*,*)'position.fdf created...'
+          'cp strain_1.00/s_position_1.00.fdf s_position.fdf')
+        write(*,*)'strain_*/s_position_*.fdf created...'
+        write(*,*)'s_position.fdf created...'
         if(vasp_out .eq. 1) then
         call execute_command_line(&
           'cp strain_1.00/POSCAR POSCAR')
           write(*,*) 'strain_*/POSCAR with strain created...'
           write(*,*) 'POSCAR created...'
         endif
+          elseif( chs_siesta .eq. 2) then ! tse_*
+        call execute_command_line(&
+          'cp strain_1.00/tse_position_1.00.fdf tse_position.fdf')
+        write(*,*)'strain_*/tse_position_*.fdf created...'
+        write(*,*)'tse_position.fdf created...'
+        if(vasp_out .eq. 1) then
+        call execute_command_line(&
+          'cp strain_1.00/POSCAR POSCAR')
+          write(*,*) 'strain_*/POSCAR with strain created...'
+          write(*,*) 'POSCAR created...'
+        endif
+          elseif( chs_siesta .eq. 3) then ! tss_*
+        call execute_command_line(&
+          'cp strain_1.00/tb/tss_position_1.00.fdf tss_position.fdf')
+        write(*,*)'strain_*/tb/tss_position_*.fdf created...'
+        write(*,*)'tss_position.fdf created...'
+        if(vasp_out .eq. 1) then
+        call execute_command_line(&
+          'cp strain_1.00/tb/POSCAR POSCAR')
+          write(*,*) 'strain_*/tb/POSCAR with strain created...'
+          write(*,*) 'POSCAR created... if POSCAR existed, rewritten'
+        endif
+          endif
         elseif( strain_chs .eq. 2) then
         call execute_command_line(&
           'cp strain_1.00/position_1.00.fdf position.fdf')
@@ -1261,8 +1431,8 @@
         endif
 
         write(*,*)
-        write(*,*) 'Please check ./position.fdf created or not...'
-        write(*,*) 'Currently, ./position.fdf is for crtfil4trasief90'
+        write(*,*) 'Please check s_, tse_, tss_, position.fdf ...'
+        write(*,*) 'Currently, s_, tse_, tss_, is for crtfil4trasief90'
         write(*,*)
         
         deallocate(z_lattice)

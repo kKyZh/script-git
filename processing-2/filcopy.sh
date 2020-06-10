@@ -49,9 +49,10 @@ echo cp crtfil4trasie.f90 ../
 echo cp crtfil4trasie.f90 ../backup
 echo cp crtfil4trasie.f90 ~/script-git
 echo cp crtfil4trasief90 ~/bin
-echo cp strain_get.f90 ../
-echo cp strain_get.f90 ../backup
-echo cp strain_get.f90 ~/script-git
+echo cp strainget.f90 ../
+echo cp strainget.f90 ../backup
+echo cp strainget.f90 ~/script-git
+echo cp straingetf90 ~/bin
 echo cp vaspout2position.f90 ../
 echo cp vaspout2position.f90 ../backup
 echo cp vaspout2position.f90 ~/script-git
@@ -118,9 +119,10 @@ cp crtfil4trasie.f90 ../
 cp crtfil4trasie.f90 ../backup
 cp crtfil4trasie.f90 ~/script-git
 cp crtfil4trasief90 ~/bin
-cp strain_get.f90 ../
-cp strain_get.f90 ../backup
-cp strain_get.f90 ~/script-git
+cp strainget.f90 ../
+cp strainget.f90 ../backup
+cp strainget.f90 ~/script-git
+cp straingetf90 ~/bin
 cp vaspout2position.f90 ../
 cp vaspout2position.f90 ../backup
 cp vaspout2position.f90 ~/script-git

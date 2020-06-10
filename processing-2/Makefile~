@@ -1,6 +1,6 @@
 .SUFFIXES: .f90 .c .o
 
-EXECS = sumldosf90 lmpdum2posf90 crt4run_shf90 crtfil4trasief90 # crtfil4tbtf90 getiv2datf90 testf90 vaspout2positionf90 
+EXECS = lmpdum2posf90 crtfil4trasief90 # crt4run_shf90 sumldosf90 crtfil4tbtf90 getiv2datf90 testf90 vaspout2positionf90 
 all: $(EXECS)
 
 FC=ifort
@@ -12,11 +12,11 @@ LDLIBS= -lreadline
 
 test_obj= test.o jsu_readline.o FCreadline.o
 getiv2dat_obj= getiv2dat.o
-crt4run_sh_obj= crt4run_sh.o jsu_readline.o FCreadline.o strain_get.o
+crt4run_sh_obj= crt4run_sh.o jsu_readline.o FCreadline.o strainget.o
 crtfil4tbt_obj= crtfil4tbt.o jsu_readline.o FCreadline.o
 lmpdum2pos_obj= lmpdum2pos.o jsu_readline.o FCreadline.o manual.o Lammps2fdf.o changeatnum.o
 crtfil4trasie_obj= crtfil4trasie.o jsu_readline.o FCreadline.o manual.o
-vaspout2positionf90_obj= vaspout2position.o jsu_readline.o FCreadline.o strain_get.o
+vaspout2positionf90_obj= vaspout2position.o jsu_readline.o FCreadline.o strainget.o
 sumldosf90_obj= sumldos.o jsu_readline.o FCreadline.o
 
 sumldosf90: $(sumldosf90_obj)
@@ -40,7 +40,7 @@ getiv2datf90: $(getiv2dat_obj)
 .c.o:
 	$(cc) -c $<
 
-sumldos.o: jsu_readline
+sumldos.o: jsu_readline.o
 test.o: jsu_readline.o
 jsu_readline.o: FCreadline.o
 vaspout2position.o: jsu_readline.o strain_get.o

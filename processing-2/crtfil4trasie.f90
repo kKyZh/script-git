@@ -52,7 +52,7 @@
         character(128) string ! userreadline
         integer check ! check for strain
         integer chk_psf
-        integer m
+        integer m, n
         integer strain_chs, strain_lo, strain_hi
         integer len_strain_nam, len_fra_strain_nam
         integer len_fra_percent, len_int_strain_nam
@@ -64,14 +64,26 @@
         integer fix_species
         real, allocatable :: z_lattice(:)
         !----------------------------------
+        integer tse_nutot_at, tse_nutot_sp, tss_nutot_sp
+        integer tss_nutot_at
+        integer, allocatable :: tse_nutot_el(:)
+        integer, allocatable :: tss_nutot_el(:)
+        real tse_lat_x, tse_lat_y, tse_lat_z
+        real tse_x, tse_y, tse_z
+        character(8), allocatable :: tss_lb_el(:)!label of element
+        character(8), allocatable :: tse_lb_el(:)!label of element
+        integer, allocatable :: tse_l(:) ! revise the problem of l
+        integer, allocatable :: tss_l(:) ! revise the problem of l
+        !----------------------------------
 
         write(*,*)
-        write(*,'(1x,6a)')'Running... Creating *.fdf input file ',&
+        write(*,'(1x,7a)')'Running... Creating *.fdf input file ',&
           'for SIESTA/TranSIESTA... ',&
           'for INCAR (new added)... ',&
           '(Prepare *** POTCAR & KPOINTS *** HERE before INCAR) ',&
           '(Prepare *** *.psf & getdata.lammps *** before strain) ',&
-          '(Version --2.30 //May/6/2020//)'
+          '(with pre-label -> s_*, tse_*, tss_*) ',&
+          '(Version --2.40 //June/7/2020//)'
         ! since KPOINTS and POTCAR always same and easy to create this
         ! time, just prepare them before the INCAR for strain.
         ! later mayber write a script for all necessary files creation
@@ -85,7 +97,7 @@
         write(*,*)&
         '(Include reading TranSIESTA input file after sorted)'
           ! maybe crtfil4siesta will not be used anymore
-        write(*,*)' '
+        write(*,*)
         write(*,*)'This time only parts of parameters can be changed'
 
         ! ###### help options ######
@@ -121,48 +133,53 @@
           goto 997
         endif
 
-        ! ###### help options finished ######
-        ! ###### check variable has .fdf ######
-
-        if(narg>0)then
-          nna=0
-        do i=1,narg
-        call get_command_argument(i,chk_filename)
-        ! for creat a tss_*.fdf file filename1 is the tse_*.*
-
-        lchk=len_trim(chk_filename)
-        if(chk_filename(lchk-3:lchk)=='.fdf')then
-          filename1=chk_filename
-          goto 97
-        else
-          nna=nna+1
-        endif
-        enddo
-          if(narg==nna)then
+        ! choose type s_, tse_, tss_, and check proper files
+        ! s_, tse_, tss_, should exist in the root dir
+        !--------------- siesta or transiesta
+2001    continue
+        write(*,*)
+        write(*,*)'------------------- Information -------------------'
+        write(*,*)'Please choose .fdf file type & w/wo INCAR'
+        !######################################## add INCAR
+        ! maybe only siesta needs INCAR
+        write(*,'(a,/,a,/,a,/,a)') &
+          '(1) SIESTA -> w/wo INCAR (s_*); ',&
+          '(2) TranSIESTA -> (tse_*); ',&
+          '(3) TranSIESTA -> (tss_*); ',&
+          '(0)Quit;'
+        !######################################## add INCAR
+        call userreadline( string, '(1, 2, 3, 0) : ')
+        read( string, *, iostat=chk_t) chs_t
+        if(chk_t.ne.0)then
+          goto 2001
+        elseif(chs_t.eq.0)then
           write(*,*)
-          write(*,*)'------'
-          write(*,*)'No available .fdf selected'
-          write(*,*)'call manual: -h'
+          write(*,'(a,i0,a)')'You choose (',chs_t,') Quit;'
           write(*,*)
-          goto 997
-          endif
-        endif
-
-        ! ###### check variable has .fdf finished ######
-97      continue
-
+          write(*,*)'Bye...'
+          write(*,*)
+          goto 997 
+        ! s_ siesta ##############################
+        elseif(chs_t.eq.1)then
+          write(*,*)
+          write(*,'(a,i0,a)')'You choose (',chs_t,')SIESTA -> s_'
+        ! getdata.lammps and position.fdf for structure information
+        ! getdata.lammps -> atom species, lattice vector and so on
+        ! position.fdf -> number & name of atom types, also rename
+        ! new -> add s_, tse_, tss_, before above files probably
         write(*,*)
         write(*,*)'Running...   Checking files for writing'
-        open(10,file='getdata.lammps', form='formatted', status='old',& 
-                err=999, access='sequential')
-        open(20,file='position.fdf', form='formatted',err=998,& 
+        open(10,file='s_getdata.lammps', &
+          form='formatted', status='old',& 
+          err=999, access='sequential')
+        open(20,file='s_position.fdf', form='formatted',err=998,& 
                 status='old', access='sequential')
         write(*,*)'Running...   Checking completed'
         write(*,*)
         write(*,*)'----------------------------------------------------'
         write(*,*)'List of all *.fdf POTCAR files : '
         write(*,*)
-        call execute_command_line('ls *.fdf')
+        call execute_command_line('ls s_*.fdf')
         call execute_command_line('ls POTCAR')
         write(*,*)'----------------------------------------------------'
         write(*,*)'Current path : '
@@ -174,16 +191,16 @@
         write(*,*)
         write(*,*)'Please name the input file (Less than 32 characters)'
         write(*,'(2a)') &
-          ' (only *.fdf files with entered file name, below, ', &
+          ' (only s_*.fdf files with entered file name, below, ', &
           'will be checked for existance or not)'
         call userreadline( filename, &
-          '(file name without .extensions.) : ')
-        inquire(file=''//trim(filename)//'.fdf',exist=chk_filex)
+          '(file name without .extensions. & .lead-label. -> s_) : ')
+        inquire(file='s_'//trim(filename)//'.fdf',exist=chk_filex)
         if(chk_filex)then
 3003    continue
           write(*,*)
           write(*,*)'---------- Warning ----------'
-          write(*,*)'File '//trim(filename)//'.fdf existed,',&
+          write(*,*)'File s_'//trim(filename)//'.fdf existed,',&
           'do you want to overwritten it?'
           call userreadline( string, '(y:yes, n:no, q:quit) : ')
           read( string, *, iostat=chk_chs_filex)chs_filex
@@ -210,31 +227,6 @@
         write(*,*)
         write(*,*)'Running...   Writing .fdf file'
 
-        tab=achar(9)
-
-!----------------------------read part--------------------------
-        !--------------- siesta or transiesta
-2001    continue
-        write(*,*)
-        write(*,*)'------------------- Information -------------------'
-        write(*,*)'Please choose .fdf file type or INCAR'
-        !######################################## add INCAR
-        write(*,*)'(1) SIESTA -> w/wo INCAR; (2) TranSIESTA; (0)Quit;'
-        !######################################## add INCAR
-        call userreadline( string, '(Integer) : ')
-        read( string, *, iostat=chk_t) chs_t
-        if(chk_t.ne.0)then
-          goto 2001
-        elseif(chs_t.eq.0)then
-          write(*,*)
-          write(*,'(a,i0,a)')'You choose (',chs_t,') Quit;'
-          write(*,*)
-          write(*,*)'Bye...'
-          write(*,*)
-          goto 2000
-        elseif(chs_t.eq.1)then
-          write(*,*)
-          write(*,'(a,i0,a)')'You choose (',chs_t,')SIESTA'
 2002    continue
           write(*,*)
           write(*,*) 'Do you need VASP INCAR file?'
@@ -260,26 +252,220 @@
               goto 997
             endif
           endif
-        elseif(chs_t==2)then
+        ! tse_ transiesta ##############################
+        elseif(chs_t.eq.2)then
           write(*,*)
-          write(*,'(a,i0,a)')'You choose (',chs_t,')TranSIESTA'
+          write(*,'(a,i0,a)')'You choose (',chs_t,')TranSIESTA -> tse_'
+          write(*,*) 'Only tse.*.fdf, no files for VASP now, add later'
+        ! getdata.lammps and position.fdf for structure information
+        ! getdata.lammps -> atom species, lattice vector and so on
+        ! position.fdf -> number & name of atom types, also rename
+        ! new -> add s_, tse_, tss_, before above files probably
+        write(*,*)
+        write(*,*)'Running...   Checking files for writing'
+        open(10,file='tse_getdata.lammps', &
+          form='formatted', status='old',& 
+          err=999, access='sequential')
+        open(20,file='tse_position.fdf', form='formatted',err=998,& 
+                status='old', access='sequential')
+        write(*,*)'Running...   Checking completed'
+        write(*,*)
+        write(*,*)'----------------------------------------------------'
+        write(*,*)'List of all *.fdf POTCAR files : '
+        write(*,*)
+        call execute_command_line('ls tse_*.fdf')
+        call execute_command_line('ls POTCAR')
+        write(*,*)'----------------------------------------------------'
+        write(*,*)'Current path : '
+        write(*,*)
+        call execute_command_line('pwd')
+        write(*,*)'----------------------------------------------------'
+!------------------------------ check the file existed or nor -----
+3010    continue
+        write(*,*)
+        write(*,*)'Please name the input file (Less than 32 characters)'
+        write(*,'(2a)') &
+          ' (only *.fdf files with entered file name, below, ', &
+          'will be checked for existance or not)'
+        call userreadline( filename, &
+          '(file name without .extensions. & .lead-label. -> tse_) : ')
+        inquire(file='tse_'//trim(filename)//'.fdf',exist=chk_filex)
+        if(chk_filex)then
+3013    continue
+          write(*,*)
+          write(*,*)'---------- Warning ----------'
+          write(*,*)'File tse_'//trim(filename)//'.fdf existed,',&
+          'do you want to overwritten it?'
+          call userreadline( string, '(y:yes, n:no, q:quit) : ')
+          read( string, *, iostat=chk_chs_filex)chs_filex
+          if(chk_chs_filex .ne. 0) then
+            goto 3013
+          else
+            select case (chs_filex)
+            case('y','Y')
+              goto 3011
+            case('n','N')
+              goto 3010
+            case('q','Q')
+              write(*,*)
+              write(*,*)'You quit... Bye!!'
+              write(*,*)
+              goto 3002
+            case default
+              goto 3013
+            endselect
+          endif
+        endif
+
+3011    continue
+        write(*,*)
+        write(*,*)'Running...   Writing .fdf file'
+          vasp_out = 2
+        ! tss_ transiesta ##############################
+        elseif(chs_t==3)then
+        ! ###### help options finished ######
+        ! ###### check variable has .fdf ######
+        if(narg>0)then
+          nna=0
+        do i=1,narg
+        call get_command_argument(i,chk_filename)
+        ! for creat a tss_*.fdf file filename1 is the tse_*.*
+        lchk=len_trim(chk_filename)
+        if(chk_filename(lchk-3:lchk)=='.fdf')then
+          filename1=chk_filename
+          filename2=filename1(1:len_trim(filename1)-4)
+          inquire( file=''//trim(adjustl(filename1))//'',&
+            exist=chk_filex)
+          if( chk_filex .eq. .false.) goto 9997
+          ! delete '.fdf'
+          inquire( file=''//trim(adjustl(filename2))//'.TSHS',&
+            exist=chk_filex)
+          if( chk_filex .eq. .false.) goto 9997
+          inquire( file='s_getdata.lammps', exist=chk_filex)
+          if( chk_filex .eq. .false.) goto 9997
+          inquire( file='s_position.fdf', exist=chk_filex)
+          if( chk_filex .eq. .false.) goto 9997
+          inquire( file='tse_getdata.lammps', exist=chk_filex)
+          if( chk_filex .eq. .false.) goto 9997
+          inquire( file='tse_position.fdf', exist=chk_filex)
+          if( chk_filex .eq. .false.) goto 9997
+          if( chk_filex .eq. .true.) goto 97
+9997    continue
+            write(*,*)
+            write(*,*) 'ERROR : no tse_*.fdf here, please check'
+            write(*,*) 'ERROR : no tse_*.TSHS here, please check'
+            write(*,*) 'Please check copy s_ tse_ position.fdf here'
+            write(*,*) 'Please check copy s_ tse_ getdata.lammps here'
+            write(*,*)
+            goto 997
+        else
+          nna=nna+1
+        endif
+        enddo
+          if(narg==nna)then
+          write(*,*)
+          write(*,*) '------'
+          write(*,*) 'No available .fdf selected'
+          write(*,*) 'Please prepare tse_*.fdf for tss_ calculation'
+          write(*,*) 'call manual: -h'
+          write(*,*)
+          goto 997
+          endif
+        endif
+        ! ###### check variable has .fdf finished ######
+97      continue
+          write(*,*)
+          write(*,'(a,i0,a)')'You choose (',chs_t,')TranSIESTA -> tss_'
+          write(*,*) 'Only tss.*.fdf, no files for VASP now, add later'
+        ! getdata.lammps and position.fdf for structure information
+        ! getdata.lammps -> atom species, lattice vector and so on
+        ! position.fdf -> number & name of atom types, also rename
+        ! new -> add s_, tse_, tss_, before above files probably
+        write(*,*)
+        write(*,*)'Running...   Checking files for writing'
+        open(10,file='s_getdata.lammps', &
+          form='formatted', status='old',& 
+          err=999, access='sequential')
+        open(20,file='s_position.fdf', form='formatted',err=998,& 
+          status='old', access='sequential')
+        open(11,file='tse_getdata.lammps', &
+          form='formatted', status='old',& 
+          err=999, access='sequential')
+        open(21,file='tse_position.fdf', form='formatted',err=998,& 
+          status='old', access='sequential')
+        write(*,*)'Running...   Checking completed'
+        write(*,*)
+        write(*,*)'----------------------------------------------------'
+        write(*,*)'List of all *.fdf POTCAR files : '
+        write(*,*)
+        call execute_command_line('ls tss_*.fdf')
+        call execute_command_line('ls POTCAR')
+        write(*,*)'----------------------------------------------------'
+        write(*,*)'Current path : '
+        write(*,*)
+        call execute_command_line('pwd')
+        write(*,*)'----------------------------------------------------'
+!------------------------------ check the file existed or nor -----
+3020    continue
+        write(*,*)
+        write(*,*)'Please name the input file (Less than 32 characters)'
+        write(*,'(2a)') &
+          ' (only *.fdf files with entered file name, below, ', &
+          'will be checked for existance or not)'
+        call userreadline( filename, &
+          '(file name without .extensions. & .lead-label. -> tss_) : ')
+        inquire(file='tss_'//trim(filename)//'.fdf',exist=chk_filex)
+        if(chk_filex)then
+3023    continue
+          write(*,*)
+          write(*,*)'---------- Warning ----------'
+          write(*,*)'File tss_'//trim(filename)//'.fdf existed,',&
+          'do you want to overwritten it?'
+          call userreadline( string, '(y:yes, n:no, q:quit) : ')
+          read( string, *, iostat=chk_chs_filex)chs_filex
+          if(chk_chs_filex .ne. 0) then
+            goto 3023
+          else
+            select case (chs_filex)
+            case('y','Y')
+              goto 3021
+            case('n','N')
+              goto 3020
+            case('q','Q')
+              write(*,*)
+              write(*,*)'You quit... Bye!!'
+              write(*,*)
+              goto 3002
+            case default
+              goto 3023
+            endselect
+          endif
+        endif
+
+3021    continue
+        write(*,*)
+        write(*,*)'Running...   Writing .fdf file'
+          vasp_out = 2
           open(50,file=filename1, form='formatted', status='old',& 
                   err=990, access='sequential')
       ! this filename1 should be tse_*.fdf input file (copy it when
       ! creating tss_*.fdf after copy s_position and tse_position file)
       !##### another way is using inquire
-          filename2=filename1(1:len_trim(filename1)-4)
-          ! delete '.fdf'
 
-        elseif(chs_t/=0.or.chs_t/=1.or.chs_t/=2)then
+      ! tse_*.TSHS only will be need for electrode files
+
+        elseif(chs_t/=0.or.chs_t/=1.or.chs_t/=2.or.chs_t/=3)then
           goto 2001
         endif
 
+        tab=achar(9)
+!----------------------------read part--------------------------
         !######################################## applied strain
         ! lattice and filename and position in input file
 
         ! if strain, getdata.lammps saved parameter
         ! read first line of getdata.lammps
+        ! 10 s_ 11 tse_
         read(10,*) &
           dummy, fix_species,&
           strain_chs, num_fil, strain_lo, strain_hi,&
@@ -332,6 +518,7 @@
           write(*,*) 'Lowest strain (with %)'
           !call userreadline( string, '(Integer) : ')
           !read( string, *, iostat=check) strain_lo
+          write(*,*) strain_lo
           check = 0
           if( check .ne. 0) goto 199
           if( strain_lo .lt. 0) goto 199
@@ -339,6 +526,7 @@
 198     continue
           write(*,*)
           write(*,*) 'Highest strain (with %)'
+          write(*,*) strain_hi
           !call userreadline( string, '(Integer) : ')
           !read( string, *, iostat=check) strain_hi
           check = 0
@@ -361,6 +549,7 @@
 197     continue
           write(*,*)
           write(*,*) 'Interval (with %)'
+          write(*,*) strain_in
           !call userreadline( string, '(Decimal or Integer) : ')
           !read( string, *, iostat=check) strain_in
           check = 0
@@ -427,29 +616,84 @@
           endif
 
           !############################## open write files
+      if( chs_t .eq. 1) then ! s_ siesta
           open(50000+i, &
             file=&
-            './strain_'//trim(adjustl(strain_chr_nam))//&
-            '/'//trim(filename)//&
+            'strain_'//trim(adjustl(strain_chr_nam))//&
+            '/s_'//trim(filename)//&
             '_'&
             //trim(adjustl(strain_chr_nam))//'.fdf',&
             status='unknown', &
             err=95, form='formatted', access='sequential') 
 
         call execute_command_line(&
-          'cp *.psf ./strain_'&
+          'cp *.psf strain_'&
           //trim(adjustl(strain_chr_nam))//'/')
         call execute_command_line(&
-          'cp getdata.lammps ./strain_'&
+          'cp s_getdata.lammps strain_'&
           //trim(adjustl(strain_chr_nam))//'/')
 
           if(vasp_out .eq. 1) then
             open(80000+i, &
               file=&
-              './strain_'//trim(adjustl(strain_chr_nam))//'/INCAR',&
+              'strain_'//trim(adjustl(strain_chr_nam))//'/INCAR',&
               status='unknown', &
               err=94, form='formatted', access='sequential')
           endif
+      elseif( chs_t .eq. 2) then ! tse_ electrode transiesta
+          open(50000+i, &
+            file=&
+            'strain_'//trim(adjustl(strain_chr_nam))//&
+            '/tse_'//trim(filename)//&
+            '_'&
+            //trim(adjustl(strain_chr_nam))//'.fdf',&
+            status='unknown', &
+            err=95, form='formatted', access='sequential') 
+
+        call execute_command_line(&
+          'cp *.psf strain_'&
+          //trim(adjustl(strain_chr_nam))//'/')
+        call execute_command_line(&
+          'cp tse_getdata.lammps strain_'&
+          //trim(adjustl(strain_chr_nam))//'/')
+
+          if(vasp_out .eq. 1) then
+            open(80000+i, &
+              file=&
+              'strain_'//trim(adjustl(strain_chr_nam))//'/INCAR',&
+              status='unknown', &
+              err=94, form='formatted', access='sequential')
+          endif
+      elseif( chs_t .eq. 3) then ! tss_ transiesta
+          open(50000+i, &
+            file=&
+            'strain_'//trim(adjustl(strain_chr_nam))//&
+            '/tss_'//trim(filename)//&
+            '_'&
+            //trim(adjustl(strain_chr_nam))//'.fdf',&
+            status='unknown', &
+            err=95, form='formatted', access='sequential') 
+
+        !call execute_command_line(&
+        !  'cp *.psf ./strain_'&
+        !  //trim(adjustl(strain_chr_nam))//'/tb/')
+        !call execute_command_line(&
+        !  'cp tss_getdata.lammps ./strain_'&
+        !  //trim(adjustl(strain_chr_nam))//'/tb/')
+
+          if(vasp_out .eq. 1) then
+            open(80000+i, &
+              file=&
+              'strain_'//trim(adjustl(strain_chr_nam))//'/INCAR',&
+              status='unknown', &
+              err=94, form='formatted', access='sequential')
+          endif
+      endif
+      ! tss_input will be created separately
+      ! mer4fdff90 and xyz2fdff90 will be included here for tss_position
+      ! no relaxation this time for s_ and tse_ by siesta
+      ! xyz2fdff90 will not use at present
+      ! copy files will be checked before tss_ run
 
           enddo
           !############################## open write files
@@ -477,7 +721,7 @@
 
         open(50000+i,&
           file=&
-          './strain_'//trim(adjustl(strain_chr_nam))//&
+          'strain_'//trim(adjustl(strain_chr_nam))//&
           '/'//trim(filename)//'_'&
           //trim(adjustl(strain_chr_nam))//'.fdf',&
           status='unknown', &
@@ -486,16 +730,16 @@
           if(vasp_out .eq. 1) then
             open(80000+i, &
               file=&
-              './strain_'//trim(adjustl(strain_chr_nam))//'/INCAR',&
+              'strain_'//trim(adjustl(strain_chr_nam))//'/INCAR',&
               status='unknown', &
               err=94, form='formatted', access='sequential')
           endif
 
         call execute_command_line(&
-          'cp *.psf ./strain_'&
+          'cp *.psf strain_'&
           //trim(adjustl(strain_chr_nam))//'/')
         call execute_command_line(&
-          'cp getdata.lammps ./strain_'&
+          'cp getdata.lammps strain_'&
           //trim(adjustl(strain_chr_nam))//'/')
 
         write(*,*)
@@ -509,7 +753,25 @@
         !################################### applied strain finished
         !------------------- choose finishied chs_t assigned ----------
 
+        ! 11 -> tse, 10 s
         ! read for nutot_el
+        if( chs_t .eq. 3) then
+        read(11,*) dummy
+        read(11,*) tse_nutot_at
+        read(11,*) tse_nutot_sp
+        rewind(11)
+        allocate(tse_nutot_el(tse_nutot_sp))
+        read(11,'(a)') dummy
+        read(11,*) tse_nutot_at!total atom
+        read(11,*) tse_nutot_sp, dummy, dummy,&
+          (tse_nutot_el(i),i=1, tse_nutot_sp) 
+        !total element species
+        read(11,*) dummy, tse_lat_x ! lattice x
+        read(11,*) dummy, tse_lat_y ! lattice y
+        read(11,*) dummy, tse_lat_z ! lattice z
+        rewind(11)
+        endif
+
         read(10,'(a)')dummy
         read(10,*)dummy!total atom
         read(10,*)nutot_sp
@@ -533,11 +795,28 @@
 
         allocate(lb_el(nutot_sp))!read from #20 file
         allocate(l(nutot_sp))
-        allocate(tmp_lb_el(nutot_sp))!read from #20 file
-        allocate(tmp_l(nutot_sp))
-        allocate(nu_lb(nutot_sp))
         allocate(i_nu_lb(nutot_sp))
-        allocate(elct_el(nutot_sp))
+        if( chs_t .eq. 3) then
+          ! tss_nutot_sp total species after merge
+          ! same electrode, if not twice
+          tss_nutot_sp = nutot_sp + 2 * tse_nutot_sp
+          tss_nutot_at = nutot_at + 2 * tse_nutot_at
+          ! twice for electrons select
+          allocate(tmp_lb_el(tss_nutot_sp))!read from #20 file
+          allocate(tmp_l(tss_nutot_sp))
+          allocate(tss_lb_el(tss_nutot_sp))!read from #20 file
+          allocate(tss_l(tss_nutot_sp))
+          allocate(tss_nutot_el(tss_nutot_sp))
+          allocate(tse_lb_el(tse_nutot_sp))!read from #20 file
+          allocate(tse_l(tse_nutot_sp))
+          allocate(nu_lb(tss_nutot_sp))
+          allocate(elct_el(tss_nutot_sp))
+        else
+          allocate(elct_el(nutot_sp))
+          allocate(nu_lb(nutot_sp))
+          allocate(tmp_lb_el(nutot_sp))!read from #20 file
+          allocate(tmp_l(nutot_sp))
+        endif
         
         write(i_nutot_at,*)nutot_at!transfer i to char
         write(i_nutot_sp,*)nutot_sp
@@ -545,6 +824,20 @@
 !----------------------------read position new -----------------------
         !-------read from position.fdf sorted z axis for
         !transiesiesta but not the sorted element column
+        if( chs_t .eq. 3) then
+        lo=1
+        hi=0
+        read(21,'(a)')dummy
+        do i=1,tse_nutot_sp
+        hi=hi+tse_nutot_el(i)
+        do j=lo,hi
+        read(21,'(a36,1x,i2,(a))')dummy,tse_l(i),tse_lb_el(i)
+        enddo
+        lo=lo+tse_nutot_el(i)
+        enddo
+        endif
+        rewind(21)
+
         lo=1
         hi=0
         read(20,'(a)')dummy
@@ -555,11 +848,69 @@
         enddo
         lo=lo+nutot_el(i)
         enddo
+        rewind(20)
+
+        if( chs_t .eq. 3) then
+          ! rearrange l(i)
+          i = 0
+          do j = 1, tse_nutot_sp
+          i = i + 1
+          tss_l(i) = tse_l(j)
+          tss_lb_el(i) = tse_lb_el(j)
+          tss_nutot_el(i) = tse_nutot_el(j)
+          enddo
+          do j = 1, nutot_sp
+          i = i + 1
+          tss_l(i) = l(j)
+          tss_lb_el(i) = lb_el(j)
+          tss_nutot_el(i) = nutot_el(j)
+          enddo
+          do j = 1, tse_nutot_sp
+          i = i + 1
+          tss_l(i) = tse_l(j)
+          tss_lb_el(i) = tse_lb_el(j)
+          tss_nutot_el(i) = tse_nutot_el(j)
+          enddo
+          if( i .ne. tss_nutot_sp) then
+            write(*,*)
+            write(*,*) 'Error : total species for tss_ are wrong!'
+            write(*,*)
+            goto 997
+          endif
+        endif
+
+        if( chs_t .eq. 3) then
+          do i = 1, tss_nutot_sp
+2200    continue
+          write(*,*)
+          write(*,*) 'Please renumber species for tss_'
+          write(*,*) 'less equal two characters'
+          write(*,'(a,i0,a,i0)') 'No. ',i,' species No. -> ',tss_l(i)
+          call userreadline( string, &
+            '('//trim(tss_lb_el(i))//' -> new No. -> ) : ')
+          read( string, '(i2)', iostat=check) tss_l(i)
+          if( check .ne. 0) goto 2200
+          enddo
+          i = 0
+          do j = 1, tse_nutot_sp
+          i = i + 1
+          tse_l(j) = tss_l(i) 
+          tse_lb_el(j) = tss_lb_el(i)
+          write(*,*) tse_l(j), trim(tse_lb_el(j))
+          enddo
+          do j = 1, nutot_sp
+          i = i + 1
+          l(j) = tss_l(i)
+          lb_el(j) = tss_lb_el(i)
+          write(*,*) l(j), trim(lb_el(j))
+          enddo
+        endif
+
         !-----------------------------------------------------------
         !#######################################################
         !---------------- renewed this part
 
-        if(chs_t==2)then
+        if(chs_t==3)then
 6000    continue
           write(*,*)
           write(*,*)'Please correct the atom types for tss_*.fdf'
@@ -568,25 +919,28 @@
           if(re_nutot_sp_chk/=0)then
             goto 6000
           else
-            if(re_nutot_sp>nutot_sp.or.re_nutot_sp<1)then
+            if(re_nutot_sp>tss_nutot_sp.or.re_nutot_sp<1)then
               goto 6000
             else
               do i=1,re_nutot_sp
-              loop2: do j=1,nutot_sp
-              if(l(j)==i)exit loop2
+              loop2: do j=1,tss_nutot_sp
+              if(tss_l(j)==i)exit loop2
               enddo loop2
-                tmp_l(i)=l(j)
-                tmp_lb_el(i)=lb_el(j)
+                tmp_l(i)=tss_l(j)
+                tmp_lb_el(i)=tss_lb_el(j)
               enddo
           endif
           endif
+        do i=1,re_nutot_sp
+        write(*,*) tmp_l(i), trim(tmp_lb_el(i))
+        enddo
 
         write(*,*) '*********************************************'
         do i=1,re_nutot_sp
 1001    continue
         write(*,*)
         write(*,'(1x,3a)')'Please input the element number of ',&
-          trim(tmp_lb_el(i)), ' (which on chemical table)'
+          trim(tmp_lb_el(i)), ' (which in chemical table)'
         call userreadline( string, '(Integer) : ')
         read( string, *, iostat=chk) nu_lb(i)
         if(chk/=0)then
@@ -595,8 +949,8 @@
         write(i_nu_lb(i),'(i3)')nu_lb(i)!transfer label number to char
         endif
         enddo
-        else
 
+        else
         write(*,*) '*********************************************'
         do i=1,nutot_sp
 1011    continue
@@ -613,60 +967,6 @@
         enddo
         !---------------------------------------------------------
         endif
-        !-----------------renewed part of renew a position.fdf name
-500     continue   
-        write(*,*)
-        write(*,*)'###### Information for selection ######'
-        write(*,*)'Do you want to rename the position.fdf file?'
-        call userreadline( string, '(y: yes, n: no) : ')
-        read( string, *, iostat=posre_chs_chk) posre_chs
-        if(posre_chs_chk/=0)then
-          goto 500
-        else
-          selectcase(posre_chs)
-          case('y','Y')
-510     continue
-          write(*,*)
-          write(*,*)'Please choose the name of new position.fdf'
-          write(*,*)'(1) s_position.fdf ==> For SIESTA (Device)'
-          write(*,*)&
-            '(2) tse_position.fdf ==> For TranSIESTA (Electrode)'
-          write(*,*)&
-            '(3) tss_position.fdf ==> For TranSIESTA (Scattering)'
-          call userreadline( string, '(Integer) : ')
-          read( string, *, iostat=posre_nam_chk) posre_nam
-            if(posre_nam_chk/=0)then
-              goto 510
-            else
-            selectcase(posre_nam)
-            case('1')
-              write(*,*)
-              write(*,*)'You choose (1) s_position.fdf'
-              ! rename the position.fdf
-              ! rename the getdata.lammps
-              ! prepare for next step about tss_getdata.lammps and
-              ! tss_position.fdf
-          goto 501
-            case('2')
-              write(*,*)
-              write(*,*)'You choose (2) tse_position.fdf'
-          goto 501
-            case('3')
-              write(*,*)
-              write(*,*)'You choose (3) tss_position.fdf'
-          goto 501
-            case default
-          goto 510
-            endselect
-            endif
-        case('n','N')
-          goto 501
-        case default
-          goto 500
-        endselect
-        endif
-501     continue
-
 !--------------------- k-points for sampling ---------------
         write(*,*)
         write(*,'(1x,a)')'------- Input k-points for sampling --------'
@@ -703,6 +1003,34 @@
 !---------------------- Output of Selected Wavefunctions --------------------
         !###############################################################
         sum_elct=0
+        if( chs_t .eq. 3) then
+        do i=1, tss_nutot_sp
+1015    continue
+        write(*,*)
+        write(*,*)'---- Output of Selected Wavefunctions -----'
+        write(*,*)&
+        'How many electrons will be calcualted in this section and',&
+          ' where is HOMO'
+        write(*,*)&
+        '(Ex. Carbon has 2s and 2p, total in 4, to be calculated)'
+        write(*,'(1x,3a)')'Please input the charge of ',&
+          trim(tss_lb_el(i)),&
+          ' atom '
+        call userreadline( string, '(Integer) : ')
+        read( string, *, iostat=chk) elct_el(i)
+        if(chk/=0) goto 1015
+        if( elct_el(i) .le. 0) goto 1015
+        sum_elct=sum_elct+elct_el(i)*tss_nutot_el(i)
+        enddo
+
+        nu_ho=sum_elct/2
+        do i=1,10
+        nu_wv(i)=nu_ho-5
+        enddo
+        do i=1,10
+        nu_wv(i)=nu_wv(i)+i!start from ho -2
+        enddo
+        else
         do i=1,nutot_sp
 1005    continue
         write(*,*)
@@ -728,6 +1056,7 @@
         do i=1,10
         nu_wv(i)=nu_wv(i)+i!start from ho -2
         enddo
+        endif
 
         !---------------------------------------------------------
 !----------------------------output part---------------------
@@ -804,19 +1133,114 @@
         ! ====================================== copy KPOINTS
         call execute_command_line(&
           ! file exists no need yes | before copy tested once
-          'cp KPOINTS ./strain_'&
+          'cp KPOINTS strain_'&
           //trim(adjustl(strain_chr_nam))//&
           '/KPOINTS')
         ! ====================================== copy KPOINTS finihsed
         ! ====================================== copy POTCAR
         call execute_command_line(&
         !status = system(&
-          'cp POTCAR ./strain_'&
+          'cp POTCAR strain_'&
           //trim(adjustl(strain_chr_nam))//&
           '/POTCAR')
         endif
         ! ====================================== copy POTCAR finihsed
         ! ====================================== INCAR write finished
+        if( chs_t .eq. 3) then
+        open(20000+m,&
+          file=&
+          'strain_'//trim(adjustl(strain_chr_nam))//&
+          '/tss_position_'&
+          //trim(adjustl(strain_chr_nam))//'.fdf',&
+          status='unknown', &
+          err=95, form='formatted', access='sequential') 
+        ! 20000 tss_ ; 35000 s_
+        write(20000+m,'(a)') '%block AtomicCoordinatesAndAtomicSpecies'
+
+        open(35000+m,&
+          file=&
+          'strain_'//trim(adjustl(strain_chr_nam))//&
+          '/s_position_'&
+          //trim(adjustl(strain_chr_nam))//'.fdf',&
+          status='old', &
+          err=95, form='formatted', access='sequential') 
+
+        ! first electrode
+        read(21,*) dummy
+        lo=1
+        hi=0
+        do i=1,tse_nutot_sp
+        hi=hi+tse_nutot_el(i)
+        do j=lo,hi
+        read(21,*) tse_x, tse_y, tse_z
+        ! 20000 tss_ ; 35000 s_
+        write(20000+m,'(3(1x,f11.6),1x,i2,(a))')&
+          tse_x, tse_y, tse_z, tse_l(i), tse_lb_el(i)
+        enddo
+        lo=lo+tse_nutot_el(i)
+        enddo
+        rewind(21)
+
+        ! middle scattering
+        read(35000+m,*) dummy
+        lo=1
+        hi=0
+        do i=1,nutot_sp
+        hi=hi+nutot_el(i)
+        do j=lo,hi
+        read(35000+m,*) tse_x, tse_y, tse_z
+        ! 20000 tss_ ; 35000 s_
+        write(20000+m,'(3(1x,f11.6),1x,i2,(a))')&
+          tse_x, tse_y, (tse_z + tse_lat_z), l(i), lb_el(i)
+        enddo
+        lo=lo+nutot_el(i)
+        enddo
+        rewind(35000+m)
+        ! use same with tse for easy
+
+        ! last electrode
+      if( fix_species .eq. 2) then
+        read(21,*) dummy
+        lo=1
+        hi=0
+        do i=1,tse_nutot_sp
+        hi=hi+tse_nutot_el(i)
+        do j=lo,hi
+        read(21,*) tse_x, tse_y, tse_z
+        ! 20000 tss_ ; 35000 s_
+        write(20000+m,'(3(1x,f11.6),1x,i2,(a))')&
+          tse_x, tse_y, (tse_z + tse_lat_z + z_lattice(m)), &
+          tse_l(i), tse_lb_el(i)
+        enddo
+        lo=lo+tse_nutot_el(i)
+        enddo
+        rewind(21)
+      else
+        read(21,*) dummy
+        lo=1
+        hi=0
+        do i=1,tse_nutot_sp
+        hi=hi+tse_nutot_el(i)
+        do j=lo,hi
+        read(21,*) tse_x, tse_y, tse_z
+        ! 20000 tss_ ; 35000 s_
+        write(20000+m,'(3(1x,f11.6),1x,i2,(a))')&
+          tse_x, tse_y, (tse_z + tse_lat_z + cell(3) * strain_nam), &
+          tse_l(i), tse_lb_el(i)
+        enddo
+        lo=lo+tse_nutot_el(i)
+        enddo
+        rewind(21)
+      endif
+
+        write(20000+m,'(a)') &
+          '%endblock AtomicCoordinatesAndAtomicSpecies'
+        write(*,*) &
+          'file strain_'//trim(adjustl(strain_chr_nam))//&
+          '/tss_position_'&
+          //trim(adjustl(strain_chr_nam))//'.fdf created'
+        ! 20000 tss_ ; 35000 s_
+        endif
 
         write(50000+m,'(a)')&
           '############# Initial definitions ###########'
@@ -824,10 +1248,16 @@
           (trim(tab),nu_tb=1,2),&
           trim(adjustl(filename)), '_',&
           trim(adjustl(strain_chr_nam))
+        if( chs_t .eq. 3) then
+        write(50000+m,'(3a, i0)')&
+          'NumberOfAtoms',(trim(tab),nu_tb=1,2),&
+          tss_nutot_at
+        else
         write(50000+m,'(4a)')'NumberOfAtoms',(trim(tab),nu_tb=1,2),&
           trim(adjustl(i_nutot_at))
+        endif
         !----------------renewed part
-        if(chs_t==2)then
+        if(chs_t==3)then
         write(50000+m,'(3a,i0)')&
           'NumberOfSpecies',(trim(tab),nu_tb=1,2),&
           (re_nutot_sp)
@@ -841,10 +1271,10 @@
         !#######################################################
         !---------------- renewed this part
 
-        if(chs_t==2)then
+        if(chs_t==3)then
           write(50000+m,'(a)')'%block ChemicalSpeciesLabel'
           do i=1,re_nutot_sp
-          loop1: do j=1,nutot_sp
+          loop1: do j=1,tss_nutot_sp
           if(tmp_l(j)==i)exit loop1
           enddo loop1
             write(50000+m,'(a,i0,a,i0,2a)')trim(tab),tmp_l(j),&
@@ -877,53 +1307,22 @@
         write(50000+m,'(3a)')'AtomicCoordinatesFormat',trim(tab),'Ang'
         !-----------------renewed part of renew a position.fdf name
           ! #################### rename write files
-          selectcase(posre_chs)
-          case('y','Y')
-            selectcase(posre_nam)
-            case('1')
-              status=rename(&
-              'position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
-              's_position_'//trim(adjustl(strain_chr_nam))//'.fdf')
-              status=rename('getdata.lammps','s_getdata.lammps')
-              ! rename the position.fdf
-              ! rename the getdata.lammps
-              ! prepare for next step about tss_getdata.lammps and
-              ! tss_position.fdf
+          if( chs_t .eq. 1) then
               write(50000+m,'(3a)')&
               'AtomicCoordinatesAndAtomicSpecies <'&
               ,trim(tab),&
               's_position_'//trim(adjustl(strain_chr_nam))//'.fdf'
-            case('2')
-            status=rename(&
-            'position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
-            'tse_position_'//trim(adjustl(strain_chr_nam))//'.fdf')
-            status=rename('getdata.lammps','tse_getdata.lammps')
+          elseif( chs_t .eq. 2) then
             write(50000+m,'(3a)')&
             'AtomicCoordinatesAndAtomicSpecies <'&
             ,trim(tab),&
             'tse_position_'//trim(adjustl(strain_chr_nam))//'.fdf'
-            case('3')
-            status=rename(&
-            'position_'//trim(adjustl(strain_chr_nam))//'.fdf',&
-            'tss_position_'//trim(adjustl(strain_chr_nam))//'.fdf')
-            status=rename('getdata.lammps','tss_getdata.lammps')
+          elseif( chs_t .eq. 3) then
             write(50000+m,'(3a)')&
             'AtomicCoordinatesAndAtomicSpecies <',&
             trim(tab),&
             'tss_position_'//trim(adjustl(strain_chr_nam))//'.fdf'
-            case default
-            endselect
-          case('n','N')
-            if( strain_chs .eq. 1) then
-          write(50000+m,'(3a)')'AtomicCoordinatesAndAtomicSpecies <',&
-            trim(tab),&
-            'position_'//trim(adjustl(strain_chr_nam))//'.fdf'
-            elseif( strain_chs .eq. 2) then
-          write(50000+m,'(3a)')'AtomicCoordinatesAndAtomicSpecies <',&
-            trim(tab),'position.fdf'
-            endif
-          case default
-          endselect
+          endif
           ! #################### rename finished
         write(50000+m,*)
 !---------------------structural (lattice) information ---------------
@@ -938,9 +1337,15 @@
         ! #################### uniaxial strain along Z axis for I-V
         !((trim(tab),(trim(adjustl(i_cell(i))))),i=1,3),& <- stupid!!!
         if( fix_species .eq. 2) then
+          if( chs_t .eq. 3) then
+        write(50000+m,'(3(1x, f11.6), 3(1x, a))')&
+          cell(1), cell(2), (z_lattice(m) + 2 * tse_lat_z), &
+          (trim(adjustl(rp_vl(i))),i=1,3)
+          else
         write(50000+m,'(3(1x, f11.6), 3(1x, a))')&
           cell(1), cell(2), z_lattice(m), &
           (trim(adjustl(rp_vl(i))),i=1,3)
+          endif
         else
         write(50000+m,'(3(1x, f11.6), 3(1x, a))')&
           cell(1), cell(2), cell(3)*strain_nam, &
@@ -960,7 +1365,7 @@
         write(50000+m,*)
 
         !########################## supercell
-        if(chs_t==2)then
+        if(chs_t==3)then
           write(50000+m,*)'###### one supercell for tss_*.fdf ######'
           write(50000+m,'(a)')'%block supercell'
           write(50000+m,'(a)')'1 0 0'
@@ -1007,9 +1412,9 @@
 !-------------------- Solution Method For Eigenvalues ---------------
         write(50000+m,'(a)')&
           "##### Solution Method for Eigenvalues #####"
-        if(chs_t==1)then
+        if(chs_t==1.or.chs_t.eq.2)then
         write(50000+m,'(3a)')'SolutionMethod',trim(tab),'diagon'
-        elseif(chs_t==2)then
+        elseif(chs_t==3)then
         write(50000+m,'(3a)')'SolutionMethod',trim(tab),'transiesta'
         ! transiesta second step is transiesta
         ! give a choice for siesta or transiesta
@@ -1037,7 +1442,7 @@
         write(50000+m,'(3a)')'MD.TypeOfRun',trim(tab),'CG'
         ! coordiante optimazation CG
         !######## renewed 
-        if(chs_t==1)then
+        if(chs_t==1.or.chs_t.eq.2)then
           if(nutot_at>=500)then
             write(50000+m,'(3a)')'MD.NumCGsteps',trim(tab),'0'
           elseif(nutot_at>=320.and.nutot_at<500)then
@@ -1047,7 +1452,7 @@
           endif
           ! try using gpu to relax structure
           !######## 
-        elseif(chs_t==2)then
+        elseif(chs_t==3)then
         write(50000+m,'(3a)')'MD.NumCGsteps',trim(tab),'000'
         endif
 
@@ -1070,7 +1475,7 @@
         write(50000+m,'(9a)')'1',trim(tab),'0.000000',trim(tab),&
                 '0.000000',trim(tab),'0.000000',trim(tab),&
                 '\Gamma'!from gamma
-        write(50000+m,'(8a)')'4',trim(tab),'0.000000',trim(tab),&
+        write(50000+m,'(8a)')'10',trim(tab),'0.000000',trim(tab),&
                 '0.000000',trim(tab),'0.500000',trim(tab)
                 !to 20 can be changed
                 ! 5 maybe enought for drawing
@@ -1138,6 +1543,8 @@
         write(50000+m,'(3a)')'WriteDenchar',trim(tab),'T'
         write(50000+m,'(3a)')'COOP.Write',trim(tab),'T'
         write(50000+m,'(3a)')'WriteMullikenPop',trim(tab),'1'
+        write(50000+m,'(3a)')'WriteHirshfeldPop',trim(tab),'T'
+        write(50000+m,'(3a)')'WriteVoronoiPop',trim(tab),'T'
         write(50000+m,*)
 
 !------------- Save options -----------------
@@ -1152,7 +1559,7 @@
       ! transiesta use the same with siesta first and then add
       ! transiesta parameters for electrodes and chenge the diagon to
       ! transiesta (solution method)
-        if(chs_t==2)then ! selected transiesta file created 
+        if(chs_t==3)then ! selected transiesta file created 
         write(50000+m,'(a)')"##### Transiesta/tbtrans information #####"
         write(50000+m,'(a)')"##### GF Option #####"
         write(50000+m,'(3a)')&
@@ -1164,7 +1571,7 @@
         write(50000+m,*)
 
         write(50000+m,'(a)')"##### Bias Contour Options #####"
-        write(50000+m,'(3a)')'TS.BiasContour.NumPoints',trim(tab),'10'
+        write(50000+m,'(3a)')'TS.BiasContour.NumPoints',trim(tab),'100'
         write(50000+m,'(3a)')&
           'TS.BiasContour.Eta',trim(tab),'0.000001 Ry'
         write(50000+m,*)
@@ -1191,51 +1598,20 @@
         write(50000+m,'(a)')"##### write hamiltonian #####"
         write(50000+m,'(3a)')'TS.SaveHS',trim(tab),'T'
         write(50000+m,*)
-
-!------------------------------ electrode atoms selection --------------
-        !write(*,*)&
-        !  'Please choose how many atoms as electrode for .TSHS'
-        ! keep this part maybe
-!2100    continue
-!        read(5,*,iostat=chk_e)chs_e
-!        if(chk_e/=0)then
-!          write(*,*)''
-!          write(*,*)&
-!          'Please enter the correct integer for electrode atoms'
-!          goto 2100
-!        else
-!        endif
-
-        !rewed version needs to select the tse_* file at $1 variable
-        ! keep the enter selection for atoms
-
-!------------------------------------------------------------------------
-
-        !####### read tse_*.fdf file for number of atoms
-        do i=1,2
-        read(50,'(a)')dummy
-        enddo
-
-        ! a15 ==> read dummy "a" is for all length of dummy
-        !     ==> read dummy "tab" space is a1
-        !     ==> a2 is two tab spaces
-        read(50,'(a15,i)')dummy,chs_e
-        !####### read tse_*.fdf file for number of atoms
-
         write(50000+m,'(a)')"##### left electrode #####"
         write(50000+m,'(3a)')'TS.HSFileLeft',trim(tab),&
-                        ''//trim(filename2)//'.TSHS'
-        write(50000+m,'(2a,i0)')'TS.NumUsedAtomsLeft',trim(tab),chs_e
+          ''//trim(filename2)//'.TSHS'
+        write(50000+m,'(2a,i0)')'TS.NumUsedAtomsLeft',trim(tab),&
+          tse_nutot_at
         write(50000+m,'(3a)')'TS.BufferAtomsLeft',trim(tab),'0'
         write(50000+m,*)
-
         write(50000+m,'(a)')"##### right electrode #####"
         write(50000+m,'(3a)')'TS.HSFileRight',trim(tab),&
                         ''//trim(filename2)//'.TSHS'
-        write(50000+m,'(2a,i0)')'TS.NumUsedAtomsRight',trim(tab),chs_e
+        write(50000+m,'(2a,i0)')'TS.NumUsedAtomsRight',trim(tab),&
+          tse_nutot_at
         write(50000+m,'(3a)')'TS.BufferAtomsRight',trim(tab),'0'
         write(50000+m,*)
-        
         ! need to be add many options for creating.
         endif
 
@@ -1244,10 +1620,12 @@
         close(50000+m)
         rewind(80000+m)
         close(80000+m)
+        rewind(20000+m)
+        close(20000+m)
+        rewind(35000+m)
+        close(35000+m)
         enddo
         ! enddo strain write close file 50000+m
-
-        close(50)
         !###################################################
 !------------- finished ----------------
         if(chs_t==1)then
@@ -1261,18 +1639,18 @@
           '.fdf '//trim(filename)//'.fdf')
         if( vasp_out .eq. 1) then
         call execute_command_line(&
-          'cp ./strain_'//trim(adjustl(strain_chr_nam))//&
+          'cp strain_'//trim(adjustl(strain_chr_nam))//&
           '/INCAR INCAR') 
         endif
         elseif( strain_chs .eq. 2) then
         call execute_command_line(&
-          'cp ./strain_'//trim(adjustl(strain_chr_nam))//&
+          'cp strain_'//trim(adjustl(strain_chr_nam))//&
           '/'//trim(filename)//'_'&
           //trim(adjustl(strain_chr_nam))//&
           '.fdf '//trim(filename)//'.fdf')
         if( vasp_out .eq. 1) then
         call execute_command_line(&
-          'cp ./strain_'//trim(adjustl(strain_chr_nam))//&
+          'cp strain_'//trim(adjustl(strain_chr_nam))//&
           '/INCAR INCAR') 
         endif
         endif
@@ -1330,10 +1708,13 @@
         deallocate(i_nu_lb)
         deallocate(z_lattice)
 
-2000    continue
 3002    continue
         close(20)        
         close(10)        
+        if( chs_t .eq. 3) then
+          close(21)
+          close(11)
+        endif
         goto 997
 
 999     continue
